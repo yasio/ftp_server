@@ -332,7 +332,6 @@ void ftp_session::do_transmit()
         obs.write_bytes("\r\n"sv);
       });
 
-      std::string liststr(obs.data(), obs.length());
       __service.write(this->thandle_transfer_, std::move(obs.buffer()),
                       [=]() { stock_reply("226"sv, "Done."sv); });
     }

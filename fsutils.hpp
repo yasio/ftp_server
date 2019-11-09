@@ -49,7 +49,7 @@ static long long get_file_size(cxx17::string_view path)
 {
   struct stat st;
   if (0 == ::stat(path.data(), &st))
-    return st.st_size;
+    return st.st_mode & S_IFREG ? st.st_size : 0;
   return -1;
 }
 #endif

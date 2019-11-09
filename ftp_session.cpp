@@ -11,6 +11,40 @@ using namespace std; // for string literal
 #define __service server_.service_
 #define __root server_.root_
 
+namespace nzls
+{
+template <typename _CStr, typename _Fn>
+inline void fast_split_of(_CStr s, size_t slen,
+                          const typename std::remove_pointer<_CStr>::type* delims, _Fn func)
+{
+  auto _Start = s; // the start of every string
+  auto _Ptr   = s; // source string iterator
+  auto _End   = s + slen;
+  auto _Delim = delims[0];
+  while ((_Ptr = strpbrk(_Ptr, delims)))
+  {
+    if (_Start < _Ptr)
+    {
+      func(_Start, _Ptr, _Delim);
+      _Delim = *_Ptr;
+    }
+    _Start = _Ptr + 1;
+    ++_Ptr;
+  }
+  if (_Start < _End)
+  {
+    func(_Start, _End, _Delim);
+  }
+}
+#if _HAS_CXX17
+template <typename _Elem, typename _Fn>
+inline void fast_split_of(std::basic_string_view<_Elem> s, const _Elem* delims, _Fn func)
+{
+  return fast_split_of(s.data(), s.length(), delims, func);
+}
+#endif
+} // namespace nzls
+
 static std::string to_string(ip::endpoint& ep, unsigned short port)
 {
   std::stringstream ss;
@@ -194,10 +228,22 @@ void ftp_session::process_SIZE(const std::string& param)
   }
 }
 void ftp_session::process_CDUP(const std::string& /*param*/) { process_CWD(".."); }
+
+static bool verify_path(std::string_view path)
+{
+  size_t pos = std::string::npos;
+  int total  = 0;
+  int upcnt  = 0;
+  nzls::fast_split_of(path, R"(/\)", [&](const char* s, const char* e, char) {
+    ++total;
+    if (e - s == 2 && *s == '.' && s[1] == '.')
+      ++upcnt;
+  });
+  return upcnt <= (total / 2);
+}
 void ftp_session::process_CWD(const std::string& param)
 {
   std::string path = path_;
-
   if (param == "..")
   {
     if (path.size() > 1)
@@ -222,17 +268,20 @@ void ftp_session::process_CWD(const std::string& param)
       path.append(param);
     }
   }
-  if (fsutils::is_dir_exists(__root + path))
+  if (verify_path(path))
   {
-    // TODO:
-    this->path_ = path;
-    stock_reply("250"sv, "OK."sv);
+    if (fsutils::is_dir_exists(__root + path))
+    {
+      this->path_ = path;
+      stock_reply("250"sv, "OK."sv);
+    }
+    else
+      stock_reply("550"sv,
+                  yasio::strfmt(127, "CWD failed, \"%s\": directory not found.", param.c_str()));
   }
   else
-  {
     stock_reply("550"sv,
-                yasio::strfmt(127, "CWD failed, \"%s\": directory not found.", param.c_str()));
-  }
+                yasio::strfmt(127, "CWD failed, \"%s\": directory invalid.", param.c_str()));
 }
 void ftp_session::process_PASV(const std::string& param)
 {
@@ -308,34 +357,45 @@ void ftp_session::do_transmit()
     {
       printf("FTP-DATA: start transfer file list...\n");
       yasio::obstream obs;
+      time_t tval = time(NULL);
+      struct tm daytm;
+      localtime_r(&tval, &daytm);
+
       list_files(this->fullpath_, [&](tinydir_file& f) {
-        obs.write_bytes(f.is_dir ? "type=dir;"sv : "type=file;"sv);
-        obs.write_bytes("modify="sv);
+        obs.write_bytes(f.is_dir ? "dr--r--r--"sv : "-r--r--r--");
+        obs.write_bytes(f.is_dir ? " 2"sv : " 1"sv);
         struct stat st;
         if (0 == ::stat(f.path, &st))
         {
           struct tm tinfo;
           localtime_r(&st.st_mtime, &tinfo);
 
-          char buf[96];
-          strftime(buf, 96, "%Y%m%d%H%M%S", &tinfo);
-          obs.write_bytes(buf);
           if (st.st_mode & S_IFREG)
           {
-            obs.write_bytes(";size="sv);
+            obs.write_bytes(" "sv);
             obs.write_bytes(std::to_string(st.st_size));
           }
+          else
+          {
+            obs.write_bytes(" 0"sv);
+          }
+
+          char buf[96];
+          strftime(buf, 96, tinfo.tm_year == daytm.tm_year ? " %b  %e  %R" : " %b  %e  %Y", &tinfo);
+
+          obs.write_bytes(buf);
         }
 
-        obs.write_bytes("; "sv);
+        obs.write_byte(' ');
         obs.write_bytes(f.name);
-        obs.write_bytes("\r\n"sv);
+        obs.write_bytes("\n"sv);
       });
 
       if (!obs.empty())
         __service.write(this->thandle_transfer_, std::move(obs.buffer()),
                         [=]() { stock_reply("226"sv, "Done."sv); });
-      else stock_reply("226"sv, "Done."sv);
+      else
+        stock_reply("226"sv, "Done."sv);
     }
     else if (this->status_ == transfer_status::FILE)
     {
@@ -373,9 +433,9 @@ void ftp_session::stock_reply(std::string_view code, std::string_view resp_data,
     obs.write_bytes(finished ? " "sv : "-"sv);
     if (ispath)
       obs.write_byte('\"');
-      obs.write_bytes(resp_data);
+    obs.write_bytes(resp_data);
     if (ispath)
-        obs.write_byte('\"');
+      obs.write_byte('\"');
     obs.write_bytes("\r\n"sv);
   }
   else

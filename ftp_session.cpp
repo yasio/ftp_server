@@ -11,6 +11,10 @@ using namespace std; // for string literal
 #define __service server_.service_
 #define __root server_.root_
 
+#ifdef _WIN32
+#define stat64 _stat64
+#endif
+
 namespace nzls
 {
 template <typename _CStr, typename _Fn>
@@ -366,8 +370,8 @@ void ftp_session::do_transmit()
       list_files(this->fullpath_, [&](tinydir_file& f) {
         obs.write_bytes(f.is_dir ? "dr--r--r--"sv : "-r--r--r--");
         obs.write_bytes(f.is_dir ? " 2"sv : " 1"sv);
-        struct stat st;
-        if (0 == ::stat(f.path, &st))
+        struct stat64 st;
+        if (0 == ::stat64(f.path, &st))
         {
           struct tm tinfo;
           localtime_r(&st.st_mtime, &tinfo);

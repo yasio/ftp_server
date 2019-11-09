@@ -71,7 +71,7 @@ void ftp_server::on_open_session(transport_handle_t thandle)
   {
     auto cindex  = this->avails_.back();
     thandle->ud_ = reinterpret_cast<void*>(cindex);
-    auto result = this->sessions_.emplace(cindex, std::make_shared<ftp_session>(*this, thandle));
+    auto result  = this->sessions_.emplace(cindex, std::make_shared<ftp_session>(*this, thandle));
     if (result.second)
     {
       this->avails_.pop_back();

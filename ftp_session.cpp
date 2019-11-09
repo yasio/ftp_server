@@ -1,6 +1,7 @@
 ﻿#include "ftp_session.hpp"
 #include "yasio/obstream.hpp"
 #include "ftp_server.hpp"
+#include <iostream>
 
 using namespace std; // for string literal
 
@@ -12,7 +13,7 @@ using namespace std; // for string literal
 #define __root server_.root_
 
 #ifdef _WIN32
-#define stat64 _stat64
+#  define stat64 _stat64
 #endif
 
 namespace nzls
@@ -175,14 +176,26 @@ void ftp_session::say_hello()
 
 void ftp_session::handle_packet(std::vector<char>& packet)
 {
-  std::stringstream ss;
-  ss.write(packet.data(), packet.size());
+  std::string_view algsv(packet.data(), packet.size());
+  size_t crlf;
+  while ((crlf = algsv.find_last_of("\r\n")) != std::string_view::npos)
+    algsv.remove_suffix(1);
 
   std::string cmd, param;
-  ss >> cmd;
-  ss >> param;
+  auto offset = algsv.find_first_of(' ');
+  if (offset != std::string_view::npos)
+  {
+    cmd    = algsv.substr(0, offset);
+    offset = algsv.find_first_not_of(' ', offset + 1);
+    if (offset != std::string_view::npos)
+      param = algsv.substr(offset);
+  }
+  else
+    cmd = algsv;
+
   cmd.resize(sizeof(ftp_cmd_id_t));
-  printf("Request:%s, %s\n", cmd.c_str(), param.c_str());
+
+  std::cout << algsv << "\n";
   auto handler_id = *reinterpret_cast<const uint32_t*>(cmd.c_str());
   auto it         = handlers_.find(handler_id);
   if (it != handlers_.end())

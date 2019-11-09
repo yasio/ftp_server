@@ -4,6 +4,7 @@
 class ftp_server
 {
   friend class ftp_session;
+
 public:
   ftp_server(cxx17::string_view root);
   void run(u_short port = 21);

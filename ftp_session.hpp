@@ -26,7 +26,8 @@ public:
   // say hello to client, we can start ftp service
   void say_hello();
   void handle_packet(std::vector<char>& packet);
-  void stock_reply(std::string_view code, std::string_view resp_data, bool finished = true, bool ispath = false);
+  void stock_reply(std::string_view code, std::string_view resp_data, bool finished = true,
+                   bool ispath = false);
 
   void open_transimt_session(transport_handle_t thandle);
 

@@ -229,10 +229,10 @@ void ftp_session::process_SIZE(const std::string& param)
 }
 void ftp_session::process_CDUP(const std::string& /*param*/) { process_CWD(".."); }
 
-static bool verify_path(std::string_view path)
+static bool verify_path(std::string_view path, bool isdir)
 {
   size_t pos = std::string::npos;
-  int total  = 0;
+  int total  = isdir ? 0 : -1;
   int upcnt  = 0;
   nzls::fast_split_of(path, R"(/\)", [&](const char* s, const char* e, char) {
     ++total;
@@ -268,7 +268,7 @@ void ftp_session::process_CWD(const std::string& param)
       path.append(param);
     }
   }
-  if (verify_path(path))
+  if (verify_path(path, true))
   {
     if (fsutils::is_dir_exists(__root + path))
     {
@@ -316,11 +316,13 @@ void ftp_session::process_LIST(const std::string& param)
 void ftp_session::process_RETR(const std::string& param)
 {
   std::string fullpath;
+  std::string path = param;
   if (*param.c_str() == '/')
-    fullpath = __root + param;
+    path = param;
   else
-    fullpath = __root + path_ + "/" + param;
-  if (fsutils::is_file_exists(fullpath))
+    path = path_ + "/" + param;
+
+  if (verify_path(path, false) && fsutils::is_file_exists((fullpath = __root + path)))
   {
     stock_reply("150"sv, "Opening BINARY mode for file transfer."sv);
     status_         = ftp_session::transfer_status::FILE;

@@ -5,7 +5,7 @@ int main(int argc, char** argv)
   if (argc < 2)
     return EINVAL;
 
-  std::string_view wwwroot = argv[1];
+  cxx17::string_view wwwroot = argv[1];
   if (!fsutils::is_dir_exists(wwwroot))
     return ENOENT;
 

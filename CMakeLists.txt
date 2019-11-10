@@ -8,6 +8,7 @@ set (FTP_SERVER_SRC ${FTP_SERVER_SRC_DIR}/main.cpp
 if (NOT WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fpermissive")
+    set(FTP_SERVER_SRC "${FTP_SERVER_SRC} ${FTP_SERVER_SRC_DIR}/initd.cpp")
 endif()
 
 set (FTP_SERVER_INC_DIR ${FTP_SERVER_SRC_DIR}/../../)

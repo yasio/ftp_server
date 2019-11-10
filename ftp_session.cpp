@@ -3,11 +3,10 @@
 #include "ftp_server.hpp"
 #include <iostream>
 
-#if _HAS_CXX17_FULL_FEATURES
-using namespace std; // for string literal
-#else
-#define sv
-#endif
+template <size_t size> inline cxx17::string_view _mksv(const char (&strLiteral)[size])
+{
+  return std::string_view(strLiteral, size - 1);
+}
 
 #if defined(_WIN32)
 #  define localtime_r(tp, tr) localtime_s(tr, tp)
@@ -174,8 +173,8 @@ ftp_session::ftp_session(ftp_server& server, transport_handle_t ctl)
 void ftp_session::say_hello()
 {
   using namespace std; // for string literal operator 'sv'
-  stock_reply("220"sv, u8"x-studio Pro embedded FTP Server © 2020."sv, false);
-  stock_reply("220"sv, "Please visit https://x-studio.net/"sv);
+  stock_reply(_mksv("220"), _mksv(u8"x-studio Pro embedded FTP Server © 2020."), false);
+  stock_reply(_mksv("220"), _mksv("Please visit https://x-studio.net/"));
 }
 
 void ftp_session::handle_packet(std::vector<char>& packet)
@@ -207,7 +206,7 @@ void ftp_session::handle_packet(std::vector<char>& packet)
   else
   {
     using namespace std; // for string literal operator 'sv'
-    stock_reply("500"sv, "Syntax Error."sv);
+    stock_reply(_mksv("500"), _mksv("Syntax Error."));
   }
 }
 
@@ -220,32 +219,35 @@ void ftp_session::open_transimt_session(transport_handle_t thandle)
 /// ---------- All supported commands handlers ------------
 void ftp_session::process_USER(const std::string& param)
 {
-  stock_reply("331"sv, yasio::strfmt(127, "Password required for %s.", param.c_str()));
+  stock_reply(_mksv("331"), yasio::strfmt(127, "Password required for %s.", param.c_str()));
 }
 void ftp_session::process_PASS(const std::string& param)
 {
-  stock_reply("230"sv, "Login succeed."sv);
+  stock_reply(_mksv("230"), _mksv("Login succeed."));
 }
-void ftp_session::process_SYST(const std::string& param) { stock_reply("215"sv, "WINDOWS"sv); }
+void ftp_session::process_SYST(const std::string& param)
+{
+  stock_reply(_mksv("215"), _mksv("WINDOWS"));
+}
 void ftp_session::process_PWD(const std::string& param)
 {
-  stock_reply("215"sv, this->path_, true, true);
+  stock_reply(_mksv("215"), this->path_, true, true);
 }
 void ftp_session::process_TYPE(const std::string& param)
 {
-  stock_reply("200"sv, "Switching to binary mode."sv);
+  stock_reply(_mksv("200"), _mksv("Switching to binary mode."));
 }
 void ftp_session::process_SIZE(const std::string& param)
 {
   auto size = fsutils::get_file_size(param);
   if (size > 0)
   {
-    stock_reply("213"sv, std::to_string(size));
+    stock_reply(_mksv("213"), std::to_string(size));
   }
   else
   {
-    stock_reply("550"sv, fsutils::is_dir_exists(param) ? "not a plain file."sv
-                                                       : "No such file or directory."sv);
+    stock_reply(_mksv("550"), fsutils::is_dir_exists(param) ? _mksv("not a plain file.")
+                                                            : _mksv("No such file or directory."));
   }
 }
 void ftp_session::process_CDUP(const std::string& /*param*/) { process_CWD(".."); }
@@ -294,14 +296,14 @@ void ftp_session::process_CWD(const std::string& param)
     if (fsutils::is_dir_exists(__root + path))
     {
       this->path_ = path;
-      stock_reply("250"sv, "OK."sv);
+      stock_reply(_mksv("250"), _mksv("OK."));
     }
     else
-      stock_reply("550"sv,
+      stock_reply(_mksv("550"),
                   yasio::strfmt(127, "CWD failed, \"%s\": directory not found.", param.c_str()));
   }
   else
-    stock_reply("550"sv,
+    stock_reply(_mksv("550"),
                 yasio::strfmt(127, "CWD failed, \"%s\": directory invalid.", param.c_str()));
 }
 void ftp_session::process_PASV(const std::string& param)
@@ -329,7 +331,7 @@ void ftp_session::process_PASV(const std::string& param)
 }
 void ftp_session::process_LIST(const std::string& param)
 {
-  stock_reply("150"sv, "Sending directory listing."sv);
+  stock_reply(_mksv("150"), _mksv("Sending directory listing."));
   status_         = ftp_session::transfer_status::LIST;
   this->fullpath_ = __root + path_;
   this->do_transmit();
@@ -345,31 +347,34 @@ void ftp_session::process_RETR(const std::string& param)
 
   if (verify_path(path, false) && fsutils::is_file_exists((fullpath = __root + path)))
   {
-    stock_reply("150"sv, "Opening BINARY mode for file transfer."sv);
+    stock_reply(_mksv("150"), _mksv("Opening BINARY mode for file transfer."));
     status_         = ftp_session::transfer_status::FILE;
     this->fullpath_ = fullpath;
     this->do_transmit();
   }
   else
   {
-    stock_reply("550"sv, "No such file or directory."sv);
+    stock_reply(_mksv("550"), _mksv("No such file or directory."));
   }
 }
-void ftp_session::process_QUIT(const std::string& param) { stock_reply("221"sv, "Bye."sv); }
+void ftp_session::process_QUIT(const std::string& param)
+{
+  stock_reply(_mksv("221"), _mksv("Bye."));
+}
 void ftp_session::process_AUTH(const std::string& param)
 {
-  stock_reply("502"sv,
+  stock_reply(_mksv("502"),
               yasio::strfmt(127, "Explicit %s authentication not allowed.", param.c_str()));
 }
 void ftp_session::process_OPTS(const std::string& param)
 {
-  stock_reply("211"sv, "Always in UTF8 mode."sv);
+  stock_reply(_mksv("211"), _mksv("Always in UTF8 mode."));
 }
 void ftp_session::process_FEAT(const std::string& param)
 {
-  stock_reply("211"sv, "Features:"sv, false);
-  stock_reply(""sv, "UTF8"sv, false);
-  stock_reply("211"sv, "End"sv);
+  stock_reply(_mksv("211"), _mksv("Features:"), false);
+  stock_reply(_mksv(""), _mksv("UTF8"), false);
+  stock_reply(_mksv("211"), _mksv("End"));
 }
 
 void ftp_session::do_transmit()
@@ -385,8 +390,8 @@ void ftp_session::do_transmit()
       localtime_r(&tval, &daytm);
 
       list_files(this->fullpath_, [&](tinydir_file& f) {
-        obs.write_bytes(f.is_dir ? "dr--r--r--"sv : "-r--r--r--");
-        obs.write_bytes(f.is_dir ? " 2"sv : " 1"sv);
+        obs.write_bytes(f.is_dir ? _mksv("dr--r--r--") : _mksv("-r--r--r--"));
+        obs.write_bytes(f.is_dir ? _mksv(" 2") : _mksv(" 1"));
         struct stat64 st;
         if (0 == ::stat64(f.path, &st))
         {
@@ -395,12 +400,12 @@ void ftp_session::do_transmit()
 
           if (st.st_mode & S_IFREG)
           {
-            obs.write_bytes(" "sv);
+            obs.write_byte(' ');
             obs.write_bytes(std::to_string(st.st_size));
           }
           else
           {
-            obs.write_bytes(" 0"sv);
+            obs.write_bytes(_mksv(" 0"));
           }
 
           char buf[96];
@@ -411,14 +416,14 @@ void ftp_session::do_transmit()
 
         obs.write_byte(' ');
         obs.write_bytes(f.name);
-        obs.write_bytes("\n"sv);
+        obs.write_byte('\n');
       });
 
       if (!obs.empty())
         __service.write(this->thandle_transfer_, std::move(obs.buffer()),
-                        [=]() { stock_reply("226"sv, "Done."sv); });
+                        [=]() { stock_reply(_mksv("226"), _mksv("Done.")); });
       else
-        stock_reply("226"sv, "Done."sv);
+        stock_reply(_mksv("226"), _mksv("Done."));
     }
     else if (this->status_ == transfer_status::FILE)
     {
@@ -428,7 +433,7 @@ void ftp_session::do_transmit()
           [=](std::vector<char> buffer, std::function<void()> handler) {
             return __service.write(this->thandle_transfer_, std::move(buffer), std::move(handler));
           },
-          [=]() { stock_reply("226"sv, "Done."sv); });
+          [=]() { stock_reply(_mksv("226"), _mksv("Done.")); });
     }
     else
     {
@@ -453,18 +458,18 @@ void ftp_session::stock_reply(cxx17::string_view code, cxx17::string_view resp_d
   {
 
     obs.write_bytes(code);
-    obs.write_bytes(finished ? " "sv : "-"sv);
+    obs.write_byte(finished ? ' ' : '-');
     if (ispath)
       obs.write_byte('\"');
     obs.write_bytes(resp_data);
     if (ispath)
       obs.write_byte('\"');
-    obs.write_bytes("\r\n"sv);
+    obs.write_bytes(_mksv("\r\n"));
   }
   else
   {
     obs.write_bytes(resp_data);
-    obs.write_bytes("\r\n"sv);
+    obs.write_bytes(_mksv("\r\n"));
   }
 
   if (code == "226")

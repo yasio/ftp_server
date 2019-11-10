@@ -3,7 +3,11 @@
 #include "ftp_server.hpp"
 #include <iostream>
 
+#if _HAS_CXX17_FULL_FEATURES
 using namespace std; // for string literal
+#else
+#define sv
+#endif
 
 #if defined(_WIN32)
 #  define localtime_r(tp, tr) localtime_s(tr, tp)
@@ -437,7 +441,7 @@ void ftp_session::do_transmit()
   }
 }
 
-void ftp_session::stock_reply(std::string_view code, std::string_view resp_data, bool finished,
+void ftp_session::stock_reply(cxx17::string_view code, cxx17::string_view resp_data, bool finished,
                               bool ispath)
 {
   printf("Reponse:%s, msg: %s\n", code.data(), resp_data.data());

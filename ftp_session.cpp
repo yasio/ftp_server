@@ -9,7 +9,7 @@ using namespace std;
 #else
 template <size_t size> inline cxx17::string_view _mksv(const char (&strLiteral)[size])
 {
-  return std::string_view(strLiteral, size - 1);
+  return cxx17::string_view(strLiteral, size - 1);
 }
 #endif
 
@@ -57,13 +57,11 @@ inline void fast_split_of(_CStr s, size_t slen,
     func(_Start, _End, _Delim);
   }
 }
-#if _HAS_CXX17
 template <typename _Elem, typename _Fn>
 inline void fast_split_of(cxx17::basic_string_view<_Elem> s, const _Elem* delims, _Fn func)
 {
   return fast_split_of(s.data(), s.length(), delims, func);
 }
-#endif
 } // namespace nzls
 
 static void list_files(const std::string& dirPath,
@@ -169,7 +167,7 @@ public:
 ftp_session::ftp_session(ftp_server& server, transport_handle_t ctl)
     : server_(server), thandle_ctl_(ctl), thandle_transfer_(nullptr), status_(transfer_status::NONE)
 {
-  session_id_ = static_cast<int>(reinterpret_cast<int>(thandle_ctl_->ud_));
+  session_id_ = reinterpret_cast<int>(thandle_ctl_->ud_);
   path_       = "/";
 }
 

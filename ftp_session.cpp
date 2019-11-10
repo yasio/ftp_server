@@ -492,7 +492,7 @@ void ftp_session::stock_reply(cxx17::string_view code, cxx17::string_view resp_d
 // register all supported commands' handler
 void ftp_session::register_handlers_once()
 {
-#define XSFTPD_REGISTER(cmd) register_handler(#cmd, &process_##cmd);
+#define XSFTPD_REGISTER(cmd) register_handler(#cmd, &ftp_session::process_##cmd);
   if (handlers_.empty())
   {
     XSFTPD_REGISTER(USER);

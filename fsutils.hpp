@@ -4,7 +4,7 @@
 
 namespace fsutils
 {
-#if defined(_WIN32) && 0
+#if defined(_WIN32)
 static bool is_dir_exists(cxx17::string_view path)
 {
   WIN32_FILE_ATTRIBUTE_DATA attrs = {0};

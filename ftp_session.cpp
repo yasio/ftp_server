@@ -43,7 +43,7 @@ inline void fast_split_of(_CStr s, size_t slen,
 }
 #if _HAS_CXX17
 template <typename _Elem, typename _Fn>
-inline void fast_split_of(std::basic_string_view<_Elem> s, const _Elem* delims, _Fn func)
+inline void fast_split_of(cxx17::basic_string_view<_Elem> s, const _Elem* delims, _Fn func)
 {
   return fast_split_of(s.data(), s.length(), delims, func);
 }
@@ -101,7 +101,7 @@ static void list_files(const std::string& dirPath,
 class transmit_session : public std::enable_shared_from_this<transmit_session>
 {
 public:
-  static void start_transmit(std::string_view filename,
+  static void start_transmit(cxx17::string_view filename,
                              std::function<int(std::vector<char>, std::function<void()>)> send_cb,
                              std::function<void()> complete_cb)
   {
@@ -110,7 +110,7 @@ public:
   }
 
 public:
-  transmit_session(std::string_view filename,
+  transmit_session(cxx17::string_view filename,
                    std::function<int(std::vector<char>, std::function<void()>)>& send_cb,
                    std::function<void()>& complete_cb)
       : send_cb_(std::move(send_cb)), complete_cb_(std::move(complete_cb))
@@ -176,18 +176,18 @@ void ftp_session::say_hello()
 
 void ftp_session::handle_packet(std::vector<char>& packet)
 {
-  std::string_view algsv(packet.data(), packet.size());
+  cxx17::string_view algsv(packet.data(), packet.size());
   size_t crlf;
-  while ((crlf = algsv.find_last_of("\r\n")) != std::string_view::npos)
+  while ((crlf = algsv.find_last_of("\r\n")) != cxx17::string_view::npos)
     algsv.remove_suffix(1);
 
   std::string cmd, param;
   auto offset = algsv.find_first_of(' ');
-  if (offset != std::string_view::npos)
+  if (offset != cxx17::string_view::npos)
   {
     cmd    = algsv.substr(0, offset);
     offset = algsv.find_first_not_of(' ', offset + 1);
-    if (offset != std::string_view::npos)
+    if (offset != cxx17::string_view::npos)
       param = algsv.substr(offset);
   }
   else
@@ -246,7 +246,7 @@ void ftp_session::process_SIZE(const std::string& param)
 }
 void ftp_session::process_CDUP(const std::string& /*param*/) { process_CWD(".."); }
 
-static bool verify_path(std::string_view path, bool isdir)
+static bool verify_path(cxx17::string_view path, bool isdir)
 {
   size_t pos = std::string::npos;
   int total  = isdir ? 0 : -1;

@@ -5,7 +5,7 @@
 ftp_server::ftp_server(cxx17::string_view root)
 {
   ftp_session::register_handlers_once();
-  root_ = root;
+  root_.assign(root.data(), root.size());
 }
 void ftp_server::run(u_short port)
 {

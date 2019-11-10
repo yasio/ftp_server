@@ -229,7 +229,7 @@ void ftp_session::process_PASS(const std::string& param)
 }
 void ftp_session::process_SYST(const std::string& param)
 {
-  stock_reply(_mksv("215"), _mksv("WINDOWS"));
+  stock_reply(_mksv("215"), _mksv("x-studio"));
 }
 void ftp_session::process_PWD(const std::string& param)
 {
@@ -326,7 +326,7 @@ void ftp_session::process_PASV(const std::string& param)
     std::string msg = "Entering passive mode ";
     ip::endpoint ep(thandle_ctl_->local_endpoint().ip().c_str(), channel->local_port());
 
-    msg += ep.to_strf_v4("%N,%H,%L,%M,%l,%h");
+    msg += ep.to_strf_v4("(%N,%H,%L,%M,%l,%h)");
     stock_reply("227", msg);
   }
   else

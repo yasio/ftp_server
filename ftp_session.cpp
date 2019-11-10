@@ -167,7 +167,7 @@ public:
 ftp_session::ftp_session(ftp_server& server, transport_handle_t ctl)
     : server_(server), thandle_ctl_(ctl), thandle_transfer_(nullptr), status_(transfer_status::NONE)
 {
-  session_id_ = reinterpret_cast<int>(thandle_ctl_->ud_);
+  session_id_ = thandle_ctl_->ud_.ival;
   path_       = "/";
 }
 

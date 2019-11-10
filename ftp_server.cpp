@@ -69,9 +69,9 @@ void ftp_server::on_open_session(transport_handle_t thandle)
 {
   if (!this->avails_.empty())
   {
-    auto cindex  = this->avails_.back();
-    thandle->ud_ = reinterpret_cast<void*>(cindex);
-    auto result  = this->sessions_.emplace(cindex, std::make_shared<ftp_session>(*this, thandle));
+    auto cindex       = this->avails_.back();
+    thandle->ud_.ival = cindex;
+    auto result = this->sessions_.emplace(cindex, std::make_shared<ftp_session>(*this, thandle));
     if (result.second)
     {
       this->avails_.pop_back();
@@ -91,7 +91,7 @@ void ftp_server::on_open_session(transport_handle_t thandle)
 
 void ftp_server::on_close_session(transport_handle_t thandle)
 {
-  auto it = this->sessions_.find(reinterpret_cast<int>(thandle->ud_));
+  auto it = this->sessions_.find(thandle->ud_.ival);
   if (it != this->sessions_.end())
   {
     printf("the ftp session:%p is ended, cindex=%d\n", thandle, it->first);
@@ -116,7 +116,7 @@ void ftp_server::on_open_transmit_session(int cindex, transport_handle_t thandle
 
 void ftp_server::dispatch_packet(transport_handle_t thandle, std::vector<char>&& packet)
 {
-  auto it = this->sessions_.find(reinterpret_cast<int>(thandle->ud_));
+  auto it = this->sessions_.find(thandle->ud_.ival);
   if (it != this->sessions_.end())
   {
     it->second->handle_packet(packet);

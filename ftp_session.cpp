@@ -13,6 +13,14 @@ template <size_t size> inline cxx17::string_view _mksv(const char (&strLiteral)[
 }
 #endif
 
+namespace cxx17
+{
+inline void assign(std::string& lhs, const cxx17::string_view& rhs)
+{
+  lhs.assign(rhs.data(), rhs.size());
+}
+} // namespace cxx17
+
 #if defined(_WIN32)
 #  define localtime_r(tp, tr) localtime_s(tr, tp)
 #endif
@@ -58,15 +66,6 @@ inline void fast_split_of(cxx17::basic_string_view<_Elem> s, const _Elem* delims
 #endif
 } // namespace nzls
 
-static std::string to_string(ip::endpoint& ep, unsigned short port)
-{
-  std::stringstream ss;
-  ss << "(" << (int)ep.in4_.sin_addr.s_net << "," << (int)ep.in4_.sin_addr.s_host << ","
-     << (int)ep.in4_.sin_addr.s_lh << "," << (int)ep.in4_.sin_addr.s_impno << ","
-     << ((port >> 8) & 0xff) << "," << (port & 0xff) << ")";
-
-  return ss.str();
-}
 static void list_files(const std::string& dirPath,
                        const std::function<void(tinydir_file&)>& callback, bool recursively = false)
 {
@@ -170,7 +169,7 @@ public:
 ftp_session::ftp_session(ftp_server& server, transport_handle_t ctl)
     : server_(server), thandle_ctl_(ctl), thandle_transfer_(nullptr), status_(transfer_status::NONE)
 {
-  session_id_ = reinterpret_cast<int>(thandle_ctl_->ud_);
+  session_id_ = static_cast<int>(reinterpret_cast<int>(thandle_ctl_->ud_));
   path_       = "/";
 }
 
@@ -193,13 +192,13 @@ void ftp_session::handle_packet(std::vector<char>& packet)
   auto offset = algsv.find_first_of(' ');
   if (offset != cxx17::string_view::npos)
   {
-    cmd    = algsv.substr(0, offset);
+    cxx17::assign(cmd, algsv.substr(0, offset));
     offset = algsv.find_first_not_of(' ', offset + 1);
     if (offset != cxx17::string_view::npos)
-      param = algsv.substr(offset);
+      cxx17::assign(param, algsv.substr(offset));
   }
   else
-    cmd = algsv;
+    cxx17::assign(cmd, algsv);
 
   cmd.resize(sizeof(ftp_cmd_id_t));
 
@@ -327,7 +326,9 @@ void ftp_session::process_PASV(const std::string& param)
     }
 
     std::string msg = "Entering passive mode ";
-    msg += to_string(thandle_ctl_->local_endpoint(), channel->local_port());
+    ip::endpoint ep(thandle_ctl_->local_endpoint().ip().c_str(), channel->local_port());
+
+    msg += ep.to_strf_v4("%N,%H,%L,%M,%l,%h");
     stock_reply("227", msg);
   }
   else

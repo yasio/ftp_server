@@ -3,10 +3,15 @@
 #include "ftp_server.hpp"
 #include <iostream>
 
+#if _HAS_CXX17_FULL_FEATURES
+using namespace std;
+#  define _mksv(a) a ""sv
+#else
 template <size_t size> inline cxx17::string_view _mksv(const char (&strLiteral)[size])
 {
   return std::string_view(strLiteral, size - 1);
 }
+#endif
 
 #if defined(_WIN32)
 #  define localtime_r(tp, tr) localtime_s(tr, tp)

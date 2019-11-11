@@ -392,7 +392,7 @@ void ftp_session::do_transmit()
 
       list_files(this->fullpath_, [&](tinydir_file& f) {
         obs.write_bytes(f.is_dir ? _mksv("dr--r--r--") : _mksv("-r--r--r--"));
-        obs.write_bytes(f.is_dir ? _mksv(" 2") : _mksv(" 1"));
+        obs.write_bytes(f.is_dir ? _mksv(" 2 0 0") : _mksv(" 1 0 0"));
         struct stat64 st;
         if (0 == ::stat64(f.path, &st))
         {

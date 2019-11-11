@@ -311,7 +311,6 @@ void ftp_session::process_CWD(const std::string& param)
 void ftp_session::process_PASV(const std::string& param)
 {
   static unsigned short listening_port = 20525;
-  ++listening_port;
 
   int cindex   = session_id_;
   auto channel = __service.cindex_to_handle(cindex);
@@ -319,6 +318,7 @@ void ftp_session::process_PASV(const std::string& param)
   {
     if (!__service.is_open(cindex))
     {
+      ++listening_port;
       __service.set_option(YOPT_CHANNEL_LOCAL_PORT, cindex, listening_port);
       __service.open(cindex, YCM_TCP_SERVER);
     }

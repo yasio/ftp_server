@@ -219,7 +219,7 @@ void ftp_session::process_USER(const std::string& param)
 }
 void ftp_session::process_PASS(const std::string& param)
 {
-  stock_reply(_mksv("230"), _mksv("Login succeed."));
+  stock_reply(_mksv("230"), _mksv("Login successful."));
 }
 void ftp_session::process_SYST(const std::string& param)
 { // The firefox will check the system type

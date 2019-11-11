@@ -1,5 +1,5 @@
 # ftp_server
 
-The binary of this project is deployed at [ftp://39.97.166.216/](ftp://39.97.166.216/)
+The binary of this project is deployed at [ftp://ftp.x-studio.net/](ftp://ftp.x-studio.net/)
 
 reference: ftp://ftp.gnu.org/

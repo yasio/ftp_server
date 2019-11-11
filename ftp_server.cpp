@@ -25,8 +25,6 @@ void ftp_server::run(int max_clients, u_short port)
   service_.set_option(YOPT_DEFER_HANDLER, 0);
 
   service_.schedule(std::chrono::microseconds(1), [=](bool) {
-    service_.set_option(YOPT_CHANNEL_LFBFD_PARAMS, 0, 16384, -1, 0, 0);
-    service_.set_option(YOPT_CHANNEL_LFBFD_PARAMS, 1, 16384, -1, 0, 0);
     service_.open(0, YCM_TCP_SERVER);
   });
 
@@ -111,7 +109,7 @@ void ftp_server::on_open_transmit_session(int cindex, transport_handle_t thandle
   }
   else
   {
-    printf("Error: no ftp session for file transfer channel: %d", cindex);
+    printf("Error: no ftp session for file transfer channel: %d\n", cindex);
     service_.close(thandle);
   }
 }

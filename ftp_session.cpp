@@ -13,20 +13,13 @@ template <size_t size> inline cxx17::string_view _mksv(const char (&strLiteral)[
 }
 #endif
 
-namespace cxx17
-{
-inline void assign(std::string& lhs, const cxx17::string_view& rhs)
-{
-  lhs.assign(rhs.data(), rhs.size());
-}
-} // namespace cxx17
-
 #if defined(_WIN32)
 #  define localtime_r(tp, tr) localtime_s(tr, tp)
 #endif
 
 #define __service server_.service_
 #define __root server_.root_
+#define __wanip server.wanip_
 
 #ifdef _WIN32
 #  define stat64 _stat64
@@ -327,8 +320,12 @@ void ftp_session::process_PASV(const std::string& param)
     }
 
     std::string msg = "Entering passive mode ";
-    ip::endpoint ep(thandle_ctl_->local_endpoint().ip().c_str(), channel->local_port());
-    msg += ep.to_strf_v4("(39,97,166,216,%l,%h).");
+    ip::endpoint ep;
+    if(__wanip.empty())
+      ep.assign(thandle_ctl_->local_endpoint().ip().c_str(), channel->local_port());
+    else
+      ep.assign(__wanip.c_str(), channel->local_port());
+    msg += ep.to_strf_v4("(%N,%H,%L,%M,%l,%h).");
     stock_reply("227", msg);
   }
   else

@@ -2,10 +2,11 @@
 
 #include "ftp_server.hpp"
 
-ftp_server::ftp_server(cxx17::string_view root)
+ftp_server::ftp_server(cxx17::string_view root, cxx17::string_view wanip)
 {
   ftp_session::register_handlers_once();
-  root_.assign(root.data(), root.size());
+  cxx17::assign(root_, root);
+  cxx17::assign(wanip_, wanip);
 }
 void ftp_server::run(u_short port)
 {

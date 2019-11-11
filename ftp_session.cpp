@@ -234,7 +234,8 @@ void ftp_session::process_PWD(const std::string& param)
 }
 void ftp_session::process_TYPE(const std::string& param)
 {
-  stock_reply(_mksv("200"), param == "I" ? _mksv("Switching to Binary mode.") : _mksv("Switching to ASCII mode."));
+  stock_reply(_mksv("200"), param == "I" ? _mksv("Switching to Binary mode.")
+                                         : _mksv("Switching to ASCII mode."));
 }
 void ftp_session::process_SIZE(const std::string& param)
 {
@@ -322,7 +323,7 @@ void ftp_session::process_PASV(const std::string& param)
 
     std::string msg = "Entering passive mode ";
     ip::endpoint ep;
-    if(__wanip.empty())
+    if (__wanip.empty())
       ep.assign(thandle_ctl_->local_endpoint().ip().c_str(), channel->local_port());
     else
       ep.assign(__wanip.c_str(), channel->local_port());

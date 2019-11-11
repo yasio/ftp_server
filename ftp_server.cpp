@@ -22,7 +22,7 @@ void ftp_server::run(u_short port)
   service_.set_option(YOPT_DEFER_EVENT, 0);
   service_.set_option(YOPT_DEFER_HANDLER, 0);
 
-  service_.schedule(std::chrono::seconds(1), [=](bool) {
+  service_.schedule(std::chrono::microseconds(1), [=](bool) {
     service_.set_option(YOPT_CHANNEL_LFBFD_PARAMS, 0, 16384, -1, 0, 0);
     service_.set_option(YOPT_CHANNEL_LFBFD_PARAMS, 1, 16384, -1, 0, 0);
     service_.open(0, YCM_TCP_SERVER);

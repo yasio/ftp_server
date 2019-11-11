@@ -221,15 +221,18 @@ void ftp_session::open_transimt_session(transport_handle_t thandle)
 /// ---------- All supported commands handlers ------------
 void ftp_session::process_USER(const std::string& param)
 {
-  stock_reply(_mksv("331"), yasio::strfmt(127, "Password required for %s.", param.c_str()));
+  // stock_reply(_mksv("331"), yasio::strfmt(127, "Password required for %s.", param.c_str()));
+  // stock_reply(_mksv("230"), _mksv("Login succeed."), false);
+  stock_reply(_mksv("230"), yasio::strfmt(127, "Login user is %s.", param.c_str()), false);
+  stock_reply(_mksv("230"), _mksv("Login successful."));
 }
 void ftp_session::process_PASS(const std::string& param)
 {
   stock_reply(_mksv("230"), _mksv("Login succeed."));
 }
 void ftp_session::process_SYST(const std::string& param)
-{
-  stock_reply(_mksv("215"), _mksv("x-studio"));
+{ // The firefox will check the system type
+  stock_reply(_mksv("215"), _mksv("UNIX Type: L8"));
 }
 void ftp_session::process_PWD(const std::string& param)
 {
@@ -237,7 +240,7 @@ void ftp_session::process_PWD(const std::string& param)
 }
 void ftp_session::process_TYPE(const std::string& param)
 {
-  stock_reply(_mksv("200"), _mksv("Switching to binary mode."));
+  stock_reply(_mksv("200"), param == "I" ? _mksv("Switching to Binary mode.") : _mksv("Switching to ASCII mode."));
 }
 void ftp_session::process_SIZE(const std::string& param)
 {
@@ -325,8 +328,7 @@ void ftp_session::process_PASV(const std::string& param)
 
     std::string msg = "Entering passive mode ";
     ip::endpoint ep(thandle_ctl_->local_endpoint().ip().c_str(), channel->local_port());
-
-    msg += ep.to_strf_v4("(%N,%H,%L,%M,%l,%h)");
+    msg += ep.to_strf_v4("(39,97,166,216,%l,%h).");
     stock_reply("227", msg);
   }
   else

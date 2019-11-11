@@ -7,7 +7,7 @@ class ftp_server
 
 public:
   ftp_server(cxx17::string_view root, cxx17::string_view wanip);
-  void run(u_short port = 21);
+  void run(int max_clients = 10, u_short port = 21);
 
   void on_open_session(transport_handle_t thandle);
 

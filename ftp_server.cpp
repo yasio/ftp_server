@@ -8,12 +8,13 @@ ftp_server::ftp_server(cxx17::string_view root, cxx17::string_view wanip)
   cxx17::assign(root_, root);
   cxx17::assign(wanip_, wanip);
 }
-void ftp_server::run(u_short port)
+void ftp_server::run(int max_clients, u_short port)
 {
   // max support 10 clients
   std::vector<io_hostent> hosts{{"0.0.0.0", 21}};
 
-  for (auto i = 1; i <= 10; ++i)
+  int transfer_start_id = hosts.size();
+  for (auto i = transfer_start_id; i < transfer_start_id + max_clients; ++i)
   {
     hosts.push_back({"0.0.0.0", 0});
     this->avails_.push_back(i);

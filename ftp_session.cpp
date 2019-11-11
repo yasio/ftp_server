@@ -215,9 +215,6 @@ void ftp_session::open_transimt_session(transport_handle_t thandle)
 /// ---------- All supported commands handlers ------------
 void ftp_session::process_USER(const std::string& param)
 {
-  // stock_reply(_mksv("331"), yasio::strfmt(127, "Password required for %s.", param.c_str()));
-  // stock_reply(_mksv("230"), _mksv("Login succeed."), false);
-  stock_reply(_mksv("230"), yasio::strfmt(127, "Login user is %s.", param.c_str()), false);
   stock_reply(_mksv("230"), _mksv("Login successful."));
 }
 void ftp_session::process_PASS(const std::string& param)
@@ -226,7 +223,7 @@ void ftp_session::process_PASS(const std::string& param)
 }
 void ftp_session::process_SYST(const std::string& param)
 { // The firefox will check the system type
-  stock_reply(_mksv("215"), _mksv("UNIX Type: L8"));
+  stock_reply(_mksv("215"), _mksv("WINDOWS"));
 }
 void ftp_session::process_PWD(const std::string& param)
 {
@@ -254,9 +251,8 @@ void ftp_session::process_CDUP(const std::string& /*param*/) { process_CWD("..")
 
 static bool verify_path(cxx17::string_view path, bool isdir)
 {
-  size_t pos = std::string::npos;
-  int total  = isdir ? 0 : -1;
-  int upcnt  = 0;
+  int total = isdir ? 0 : -1;
+  int upcnt = 0;
   nzls::fast_split_of(path, R"(/\)", [&](const char* s, const char* e, char) {
     ++total;
     if (e - s == 2 && *s == '.' && s[1] == '.')
@@ -308,7 +304,7 @@ void ftp_session::process_CWD(const std::string& param)
 }
 void ftp_session::process_PASV(const std::string& param)
 {
-  static unsigned short listening_port = 20525;
+  static u_short listening_port = 20525;
 
   int cindex   = session_id_;
   auto channel = __service.cindex_to_handle(cindex);

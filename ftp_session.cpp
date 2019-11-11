@@ -15,6 +15,7 @@ template <size_t size> inline cxx17::string_view _mksv(const char (&strLiteral)[
 
 #if defined(_WIN32)
 #  define localtime_r(tp, tr) localtime_s(tr, tp)
+#  define gmtime_r(tp, tr) gmtime_s(tr, tp)
 #endif
 
 #define __service server_.service_
@@ -390,7 +391,7 @@ void ftp_session::do_transmit()
       yasio::obstream obs;
       time_t tval = time(NULL);
       struct tm daytm;
-      localtime_r(&tval, &daytm);
+      gmtime_r(&tval, &daytm);
 
       list_files(this->fullpath_, [&](tinydir_file& f) {
         obs.write_bytes(f.is_dir ? _mksv("dr--r--r--") : _mksv("-r--r--r--"));
@@ -399,7 +400,7 @@ void ftp_session::do_transmit()
         if (0 == ::stat64(f.path, &st))
         {
           struct tm tinfo;
-          localtime_r(&st.st_mtime, &tinfo);
+          gmtime_r(&st.st_mtime, &tinfo);
 
           if (st.st_mode & S_IFREG)
           {

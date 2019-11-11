@@ -19,7 +19,7 @@ template <size_t size> inline cxx17::string_view _mksv(const char (&strLiteral)[
 
 #define __service server_.service_
 #define __root server_.root_
-#define __wanip server.wanip_
+#define __wanip server_.wanip_
 
 #ifdef _WIN32
 #  define stat64 _stat64

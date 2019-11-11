@@ -6,7 +6,7 @@ class ftp_server
   friend class ftp_session;
 
 public:
-  ftp_server(cxx17::string_view root, cxx17::string_view wan_ip);
+  ftp_server(cxx17::string_view root, cxx17::string_view wanip);
   void run(u_short port = 21);
 
   void on_open_session(transport_handle_t thandle);
@@ -24,5 +24,5 @@ private:
   std::unordered_map<int, ftp_session_ptr> sessions_;
 
   std::string root_;
-  std::string wan_ip_;
+  std::string wanip_;
 };

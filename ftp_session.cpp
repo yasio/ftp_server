@@ -313,7 +313,7 @@ void ftp_session::process_PASV(const std::string& param)
     if (!__service.is_open(cindex))
     {
       ++listening_port;
-      __service.set_option(YOPT_CHANNEL_LOCAL_PORT, cindex, listening_port);
+      __service.set_option(YOPT_C_LOCAL_PORT, cindex, listening_port);
       __service.open(cindex, YCM_TCP_SERVER);
     }
 

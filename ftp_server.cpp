@@ -20,9 +20,8 @@ void ftp_server::run(int max_clients, u_short port)
     this->avails_.push_back(i);
   }
 
-  service_.set_option(YOPT_NO_NEW_THREAD, 1);
-  service_.set_option(YOPT_DEFER_EVENT, 0);
-  service_.set_option(YOPT_DEFER_HANDLER, 0);
+  service_.set_option(YOPT_S_NO_NEW_THREAD, 1);
+  service_.set_option(YOPT_S_DEFERS, 0);
 
   service_.schedule(std::chrono::microseconds(1), [=](bool) {
     service_.open(0, YCM_TCP_SERVER);

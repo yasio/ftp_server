@@ -14,7 +14,7 @@ ftp_server::ftp_server(cxx17::string_view root, cxx17::string_view wanip)
     if (!eps.empty())
     {
       wanip_ = eps[0].ip();
-      printf("resolve host: %s succeed, ip: %s", wanip.data(), wanip_.c_str());
+      YASIO_LOG("resolve host: %s succeed, ip: %s", wanip.data(), wanip_.c_str());
     }
   }
   else

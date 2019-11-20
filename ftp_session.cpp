@@ -170,10 +170,31 @@ void ftp_session::say_hello()
   using namespace std; // for string literal operator 'sv'
   stock_reply(_mksv("220"), _mksv(u8"x-studio Pro embedded FTP Server © 2020."), false);
   stock_reply(_mksv("220"), _mksv("Please visit https://x-studio.net/"));
+
+  // kickout after 10 seconds, if no request from client
+  expire_timer_ = __service.schedule(
+      std::chrono::seconds(10),
+      [=](bool cancelled) {
+        if (!cancelled)
+        {
+          if (thandle_ctl_)
+          {
+            __service.close(thandle_ctl_);
+            thandle_ctl_ = nullptr;
+          }
+          auto obj = expire_timer_.lock();
+          if (obj)
+            obj->unschedule();
+        }
+  }, true);
 }
 
 void ftp_session::handle_packet(std::vector<char>& packet)
 {
+  auto obj = expire_timer_.lock();
+  if (obj)
+    obj->cancel();
+
   cxx17::string_view algsv(packet.data(), packet.size());
   size_t crlf;
   while ((crlf = algsv.find_last_of("\r\n")) != cxx17::string_view::npos)

@@ -24,7 +24,7 @@ int main(int argc, char** argv)
 #endif
   ftp_server server(wwwroot, wanip);
 
-  server.run();
+  server.run(20);
 
   return 0;
 }

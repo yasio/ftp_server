@@ -14,7 +14,6 @@ template <size_t size> inline cxx17::string_view _mksv(const char (&strLiteral)[
 #endif
 
 #if defined(_WIN32)
-#  define localtime_r(tp, tr) localtime_s(tr, tp)
 #  define gmtime_r(tp, tr) gmtime_s(tr, tp)
 #endif
 

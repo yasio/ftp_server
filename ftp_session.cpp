@@ -180,13 +180,13 @@ void ftp_session::say_hello()
         {
           if (thandle_ctl_)
           {
-	    YASIO_LOG("the session: %p is expired!", thandle_ctl_);
+            YASIO_LOG("the session: %p is expired, close it!", thandle_ctl_);
             __service.close(thandle_ctl_);
             thandle_ctl_ = nullptr;
           }
           auto obj = expire_timer_.lock();
           if (obj)
-            obj->unschedule();
+            obj->set_repeated(false);
         }
       },
       true);

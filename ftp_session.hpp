@@ -70,6 +70,8 @@ private:
 
   std::weak_ptr<deadline_timer> expire_timer_;
 
+  bool transferring_;
+
   static std::unordered_map<ftp_cmd_id_t, std::function<void(ftp_session&, const std::string&)>>
       handlers_;
 };

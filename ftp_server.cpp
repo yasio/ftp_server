@@ -23,9 +23,7 @@ void ftp_server::run(int max_clients, u_short port)
   service_.set_option(YOPT_S_NO_NEW_THREAD, 1);
   service_.set_option(YOPT_S_DEFERS, 0);
 
-  service_.schedule(std::chrono::microseconds(1), [=](bool) {
-    service_.open(0, YCM_TCP_SERVER);
-  });
+  service_.schedule(std::chrono::microseconds(1), [=](bool) { service_.open(0, YCM_TCP_SERVER); });
 
   service_.start_service(&hosts.front(), hosts.size(), [=](event_ptr&& ev) {
     auto thandle = ev->transport();

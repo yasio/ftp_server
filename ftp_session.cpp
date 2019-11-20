@@ -158,7 +158,8 @@ public:
 ////////////////////////// ftp_session /////////////////////////////////
 
 ftp_session::ftp_session(ftp_server& server, transport_handle_t ctl)
-    : server_(server), thandle_ctl_(ctl), thandle_transfer_(nullptr), status_(transfer_status::NONE)
+    : server_(server), thandle_ctl_(ctl), thandle_transfer_(nullptr),
+      status_(transfer_status::NONE), transferring_(false)
 {
   session_id_ = thandle_ctl_->ud_.ival;
   path_       = "/";
@@ -175,7 +176,7 @@ void ftp_session::say_hello()
   expire_timer_ = __service.schedule(
       std::chrono::seconds(10),
       [=](bool cancelled) {
-        if (!cancelled)
+        if (!cancelled && !transferring_)
         {
           if (thandle_ctl_)
           {
@@ -186,7 +187,8 @@ void ftp_session::say_hello()
           if (obj)
             obj->unschedule();
         }
-  }, true);
+      },
+      true);
 }
 
 void ftp_session::handle_packet(std::vector<char>& packet)
@@ -449,12 +451,16 @@ void ftp_session::do_transmit()
     else if (this->status_ == transfer_status::FILE)
     {
       printf("FTP-DATA: start transfer file: %s...\n", this->fullpath_.c_str());
+      transferring_ = true;
       transmit_session::start_transmit(
           this->fullpath_,
           [=](std::vector<char> buffer, std::function<void()> handler) {
             return __service.write(this->thandle_transfer_, std::move(buffer), std::move(handler));
           },
-          [=]() { stock_reply(_mksv("226"), _mksv("Done.")); });
+          [=]() {
+            stock_reply(_mksv("226"), _mksv("Done."));
+            transferring_ = false;
+          });
     }
     else
     {

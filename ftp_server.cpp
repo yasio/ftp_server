@@ -6,7 +6,19 @@ ftp_server::ftp_server(cxx17::string_view root, cxx17::string_view wanip)
 {
   ftp_session::register_handlers_once();
   cxx17::assign(root_, root);
-  cxx17::assign(wanip_, wanip);
+
+  if (!wanip.empty())
+  {
+    std::vector<ip::endpoint> eps;
+    xxsocket::resolve(eps, wanip.data());
+    if (!eps.empty())
+    {
+      wanip_ = eps[0].ip();
+      printf("resolve host: %s succeed, ip: %s", wanip.data(), wanip_.c_str());
+    }
+  }
+  else
+    cxx17::assign(wanip_, wanip);
 }
 void ftp_server::run(int max_clients, u_short port)
 {

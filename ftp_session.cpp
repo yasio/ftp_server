@@ -217,8 +217,7 @@ timer_cb_t ftp_session::create_timer_cb()
       }
       else if (cancelled)
       {
-        printf("the expire check timer is cancelled, start next timer!\n",
-               thiz->thandle_ctl_->id());
+        printf("%s", "the expire check timer is cancelled, start next timer!\n");
         thiz->start_exprie_timer();
       }
     }

@@ -1,6 +1,9 @@
 ﻿#include "ftp_session.hpp"
 #include "yasio/obstream.hpp"
 #include "ftp_server.hpp"
+
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <iostream>
 
 #if _HAS_CXX17_FULL_FEATURES
@@ -11,6 +14,7 @@ template <size_t size> inline cxx17::string_view _mksv(const char (&strLiteral)[
 {
   return cxx17::string_view(strLiteral, size - 1);
 }
+#  define u8
 #endif
 
 #if defined(_WIN32)
@@ -165,39 +169,68 @@ ftp_session::ftp_session(ftp_server& server, transport_handle_t ctl)
   path_       = "/";
 }
 
+ftp_session::~ftp_session()
+{
+  if (expire_timer_)
+    expire_timer_->unschedule();
+}
+
 // say hello to client, we can start ftp service
 void ftp_session::say_hello()
 {
   using namespace std; // for string literal operator 'sv'
-  stock_reply(_mksv("220"), _mksv(u8"x-studio Pro embedded FTP Server © 2020."), false);
+  stock_reply(_mksv("220"), _mksv("x-studio Pro embedded FTP Server (c) 2020."), false);
   stock_reply(_mksv("220"), _mksv("Please visit https://x-studio.net/"));
 
+  start_exprie_timer();
+}
+
+void ftp_session::start_exprie_timer()
+{
   // kickout after 10 seconds, if no request from client
-  expire_timer_ = __service.schedule(
-      std::chrono::seconds(10),
-      [=](bool cancelled) {
-        if (!cancelled && !transferring_)
+  if (expire_timer_)
+  {
+    expire_timer_->expires_from_now();
+    expire_timer_->async_wait(create_timer_cb());
+  }
+  else
+  {
+    expire_timer_ = __service.schedule(std::chrono::seconds(10), create_timer_cb());
+  }
+}
+
+timer_cb_t ftp_session::create_timer_cb()
+{
+  std::weak_ptr<ftp_session> this_wptr = shared_from_this();
+  return [=](bool cancelled) {
+    auto thiz = this_wptr.lock();
+    if (thiz)
+    {
+      if (!cancelled && !thiz->transferring_)
+      { // timeout
+        if (thiz->thandle_ctl_)
         {
-          if (thandle_ctl_)
-          {
-            YASIO_LOG("the session: %p is expired, close it!", thandle_ctl_);
-            __service.close(thandle_ctl_);
-            thandle_ctl_ = nullptr;
-          }
-          auto obj = expire_timer_.lock();
-          if (obj)
-            obj->set_repeated(false);
+          printf("the connection: #%u is expired, close it!\n", thiz->thandle_ctl_->id());
+          __service.close(thiz->thandle_ctl_);
+          thiz->thandle_ctl_ = nullptr;
         }
-      },
-      true);
+      }
+      else if (cancelled)
+      {
+        printf("the expire check timer is cancelled, start next timer!\n",
+               thiz->thandle_ctl_->id());
+        thiz->start_exprie_timer();
+      }
+    }
+    else
+    {
+      printf("the session is destroyed!\n");
+    }
+  };
 }
 
 void ftp_session::handle_packet(std::vector<char>& packet)
 {
-  auto obj = expire_timer_.lock();
-  if (obj)
-    obj->cancel();
-
   cxx17::string_view algsv(packet.data(), packet.size());
   size_t crlf;
   while ((crlf = algsv.find_last_of("\r\n")) != cxx17::string_view::npos)
@@ -221,7 +254,7 @@ void ftp_session::handle_packet(std::vector<char>& packet)
   auto handler_id = *reinterpret_cast<const uint32_t*>(cmd.c_str());
   auto it         = handlers_.find(handler_id);
   if (it != handlers_.end())
-    it->second(*this, param);
+    it->second(this, param);
   else
   {
     using namespace std; // for string literal operator 'sv'
@@ -433,8 +466,19 @@ void ftp_session::do_transmit()
           }
 
           char buf[96];
-          strftime(buf, 96, tinfo.tm_year == daytm.tm_year ? " %b  %e  %R" : " %b  %e  %Y", &tinfo);
+#if defined(_MSC_VER) && _MSC_VER < 1900
+          static char* s_months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                                     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 
+          if (tinfo.tm_year < daytm.tm_year)
+            sprintf(buf, " %s %02d %d", s_months[tinfo.tm_mon], tinfo.tm_mday,
+                    1900 + tinfo.tm_year);
+          else
+            sprintf(buf, " %s %02d %02d:%02d", s_months[tinfo.tm_mon], tinfo.tm_mday, tinfo.tm_hour,
+                    tinfo.tm_min);
+#else
+					strftime(buf, 96, tinfo.tm_year == daytm.tm_year ? " %b  %e  %R" : " %b  %e  %Y", &tinfo);
+#endif
           obs.write_bytes(buf);
         }
 
@@ -515,7 +559,9 @@ void ftp_session::stock_reply(cxx17::string_view code, cxx17::string_view resp_d
 // register all supported commands' handler
 void ftp_session::register_handlers_once()
 {
-#define XSFTPD_REGISTER(cmd) register_handler(#cmd, &ftp_session::process_##cmd);
+#define XSFTPD_REGISTER(cmd)                                                                       \
+  register_handler(                                                                                \
+      #cmd, std::bind(&ftp_session::process_##cmd, std::placeholders::_1, std::placeholders::_2));
   if (handlers_.empty())
   {
     XSFTPD_REGISTER(USER);
@@ -537,11 +583,11 @@ void ftp_session::register_handlers_once()
 }
 
 void ftp_session::register_handler(std::string cmd,
-                                   std::function<void(ftp_session&, const std::string&)> handler)
+                                   std::function<void(ftp_session*, const std::string&)> handler)
 {
   cmd.resize(sizeof(ftp_cmd_id_t));
   handlers_.emplace(*reinterpret_cast<const uint32_t*>(cmd.c_str()), std::move(handler));
 }
 
-std::unordered_map<ftp_cmd_id_t, std::function<void(ftp_session&, const std::string&)>>
+std::unordered_map<ftp_cmd_id_t, std::function<void(ftp_session*, const std::string&)>>
     ftp_session::handlers_;

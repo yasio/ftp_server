@@ -22,9 +22,12 @@ class ftp_session : public std::enable_shared_from_this<ftp_session>
 
 public:
   ftp_session(ftp_server& server, transport_handle_t ctl);
+  ~ftp_session();
 
   // say hello to client, we can start ftp service
   void say_hello();
+  void start_exprie_timer();
+  timer_cb_t create_timer_cb();
   void handle_packet(std::vector<char>& packet);
   void stock_reply(cxx17::string_view code, cxx17::string_view resp_data, bool finished = true,
                    bool ispath = false);
@@ -52,7 +55,7 @@ public:
   static void register_handlers_once();
 
   static void register_handler(std::string cmd,
-                               std::function<void(ftp_session&, const std::string&)> handler);
+                               std::function<void(ftp_session*, const std::string&)> handler);
 
   void do_transmit();
 
@@ -68,11 +71,11 @@ private:
 
   std::string fullpath_;
 
-  std::weak_ptr<deadline_timer> expire_timer_;
+  deadline_timer_ptr expire_timer_;
 
   bool transferring_;
 
-  static std::unordered_map<ftp_cmd_id_t, std::function<void(ftp_session&, const std::string&)>>
+  static std::unordered_map<ftp_cmd_id_t, std::function<void(ftp_session*, const std::string&)>>
       handlers_;
 };
 

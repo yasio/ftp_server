@@ -466,17 +466,9 @@ void ftp_session::do_transmit()
 
           char buf[96];
 #if defined(_MSC_VER) && _MSC_VER < 1900
-          static char* s_months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                                     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-
-          if (tinfo.tm_year < daytm.tm_year)
-            sprintf(buf, " %s %02d %d", s_months[tinfo.tm_mon], tinfo.tm_mday,
-                    1900 + tinfo.tm_year);
-          else
-            sprintf(buf, " %s %02d %02d:%02d", s_months[tinfo.tm_mon], tinfo.tm_mday, tinfo.tm_hour,
-                    tinfo.tm_min);
+          strftime(buf, 96, tinfo.tm_year == daytm.tm_year ? " %b %d %H:%M" : " %b %d %Y", &daytm);
 #else
-					strftime(buf, 96, tinfo.tm_year == daytm.tm_year ? " %b  %e  %R" : " %b  %e  %Y", &tinfo);
+          strftime(buf, 96, tinfo.tm_year == daytm.tm_year ? " %b  %e  %R" : " %b  %e  %Y", &tinfo);
 #endif
           obs.write_bytes(buf);
         }

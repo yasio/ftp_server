@@ -19,6 +19,14 @@ template <size_t size> inline cxx17::string_view _mksv(const char (&strLiteral)[
 
 #if defined(_WIN32)
 #  define gmtime_r(tp, tr) gmtime_s(tr, tp)
+inline FILE* sfopen(const char* filename, const char* mode)
+{
+  FILE* fp = nullptr;
+  fopen_s(&fp, filename, mode);
+  return fp;
+}
+#else
+#  define sfopen fopen
 #endif
 
 #define __service server_.service_
@@ -117,7 +125,7 @@ public:
                    std::function<void()>& complete_cb)
       : send_cb_(std::move(send_cb)), complete_cb_(std::move(complete_cb))
   {
-    this->fp_ = fopen(filename.data(), "rb");
+    this->fp_ = sfopen(filename.data(), "rb");
   }
   ~transmit_session()
   {

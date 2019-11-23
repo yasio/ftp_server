@@ -25,7 +25,7 @@ void ftp_server::run(int max_clients, u_short port)
   // max support 10 clients
   std::vector<io_hostent> hosts{{"0.0.0.0", 21}};
 
-  int transfer_start_id = hosts.size();
+  int transfer_start_id = static_cast<int>(hosts.size());
   for (auto i = transfer_start_id; i < transfer_start_id + max_clients; ++i)
   {
     hosts.push_back({"0.0.0.0", 0});
@@ -37,7 +37,7 @@ void ftp_server::run(int max_clients, u_short port)
 
   service_.schedule(std::chrono::microseconds(1), [=](bool) { service_.open(0, YCM_TCP_SERVER); });
 
-  service_.start_service(&hosts.front(), hosts.size(), [=](event_ptr&& ev) {
+  service_.start_service(&hosts.front(), static_cast<int>(hosts.size()), [=](event_ptr&& ev) {
     auto thandle = ev->transport();
     switch (ev->kind())
     {

@@ -6,7 +6,7 @@
 #include <sys/stat.h>
 #include <iostream>
 
-#if _HAS_CXX17_FULL_FEATURES
+#if YASIO__HAS_CXX17
 using namespace std;
 #  define _mksv(a) a ""sv
 #else

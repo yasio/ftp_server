@@ -17,7 +17,7 @@ public:
   void dispatch_packet(transport_handle_t thandle, std::vector<char>&& packet);
 
 private:
-  io_service service_;
+  std::unique_ptr<io_service> service_;
 
   // the avaiable session_id, session id is channle index
   std::vector<int> avails_;

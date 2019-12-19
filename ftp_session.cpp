@@ -203,7 +203,7 @@ void ftp_session::start_exprie_timer()
   }
   else
   {
-    expire_timer_ = __service.schedule(std::chrono::seconds(10), create_timer_cb());
+    expire_timer_ = __service->schedule(std::chrono::seconds(10), create_timer_cb());
   }
 }
 
@@ -219,7 +219,7 @@ timer_cb_t ftp_session::create_timer_cb()
         if (thiz->thandle_ctl_)
         {
           printf("the connection: #%u is expired, close it!\n", thiz->thandle_ctl_->id());
-          __service.close(thiz->thandle_ctl_);
+          __service->close(thiz->thandle_ctl_);
           thiz->thandle_ctl_ = nullptr;
         }
       }
@@ -370,14 +370,14 @@ void ftp_session::process_PASV(const std::string& param)
   static u_short listening_port = 20525;
 
   int cindex   = session_id_;
-  auto channel = __service.cindex_to_handle(cindex);
+  auto channel = __service->cindex_to_handle(cindex);
   if (channel != nullptr)
   {
-    if (!__service.is_open(cindex))
+    if (!__service->is_open(cindex))
     {
       ++listening_port;
-      __service.set_option(YOPT_C_LOCAL_PORT, cindex, listening_port);
-      __service.open(cindex, YCM_TCP_SERVER);
+      __service->set_option(YOPT_C_LOCAL_PORT, cindex, listening_port);
+      __service->open(cindex, YCM_TCP_SERVER);
     }
 
     std::string msg = "Entering passive mode ";
@@ -487,7 +487,7 @@ void ftp_session::do_transmit()
       });
 
       if (!obs.empty())
-        __service.write(this->thandle_transfer_, std::move(obs.buffer()),
+        __service->write(this->thandle_transfer_, std::move(obs.buffer()),
                         [=]() { stock_reply(_mksv("226"), _mksv("Done.")); });
       else
         stock_reply(_mksv("226"), _mksv("Done."));
@@ -499,7 +499,7 @@ void ftp_session::do_transmit()
       transmit_session::start_transmit(
           this->fullpath_,
           [=](std::vector<char> buffer, std::function<void()> handler) {
-            return __service.write(this->thandle_transfer_, std::move(buffer), std::move(handler));
+            return __service->write(this->thandle_transfer_, std::move(buffer), std::move(handler));
           },
           [=]() {
             stock_reply(_mksv("226"), _mksv("Done."));
@@ -546,10 +546,10 @@ void ftp_session::stock_reply(cxx17::string_view code, cxx17::string_view resp_d
   if (code == "226")
     this->status_ = transfer_status::NONE;
 
-  __service.write(this->thandle_ctl_, std::move(obs.buffer()), [=]() {
+  __service->write(this->thandle_ctl_, std::move(obs.buffer()), [=]() {
     if (code == "226" && this->thandle_transfer_ != nullptr)
     {
-      __service.close(this->thandle_transfer_);
+      __service->close(this->thandle_transfer_);
       this->thandle_transfer_ = nullptr;
     }
   });

@@ -31,13 +31,14 @@ void ftp_server::run(int max_clients, u_short port)
     hosts.push_back({"0.0.0.0", 0});
     this->avails_.push_back(i);
   }
+  service_.reset(new io_service(&hosts.front(), static_cast<int>(hosts.size())));
 
-  service_.set_option(YOPT_S_NO_NEW_THREAD, 1);
-  service_.set_option(YOPT_S_DEFERRED_EVENT, 0);
+          service_->set_option(YOPT_S_NO_NEW_THREAD, 1);
+  service_->set_option(YOPT_S_DEFERRED_EVENT, 0);
 
-  service_.schedule(std::chrono::microseconds(1), [=](bool) { service_.open(0, YCM_TCP_SERVER); });
+  service_->schedule(std::chrono::microseconds(1), [=](bool) { service_->open(0, YCM_TCP_SERVER); });
 
-  service_.start_service(&hosts.front(), static_cast<int>(hosts.size()), [=](event_ptr&& ev) {
+  service_->start_service([=](event_ptr&& ev) {
     auto thandle = ev->transport();
     switch (ev->kind())
     {
@@ -89,12 +90,12 @@ void ftp_server::on_open_session(transport_handle_t thandle)
     else
     {
       assert(false);
-      service_.close(thandle);
+      service_->close(thandle);
     }
   }
   else
   { // close directly
-    service_.close(thandle);
+    service_->close(thandle);
   }
 }
 
@@ -119,7 +120,7 @@ void ftp_server::on_open_transmit_session(int cindex, transport_handle_t thandle
   else
   {
     printf("Error: no ftp session for file transfer channel: %d\n", cindex);
-    service_.close(thandle);
+    service_->close(thandle);
   }
 }
 
@@ -133,6 +134,6 @@ void ftp_server::dispatch_packet(transport_handle_t thandle, std::vector<char>&&
   else
   {
     printf("Error: cann't dispatch for a unregistered session: %p, will close it.", thandle);
-    service_.close(thandle);
+    service_->close(thandle);
   }
 }

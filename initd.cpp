@@ -27,22 +27,22 @@ void pinitd(void)
 {
   int pid;
   int i;
-  if (pid = fork())
+  if ((pid = fork()))
   {
     exit(0);
   }
-  else if (pid < 0)
+  if (pid < 0)
   {
     exit(1);
   }
 
   setsid();
 
-  if (pid = fork())
+  if ((pid = fork()))
   {
     exit(0);
   }
-  else if (pid < 0)
+  if (pid < 0)
   {
     exit(1);
   }
@@ -52,7 +52,7 @@ void pinitd(void)
     close(i);
   }
 
-  (int)chdir("/tmp");
+  (void)chdir("/tmp");
   umask(0);
   return;
 }

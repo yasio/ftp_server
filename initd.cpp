@@ -1,4 +1,4 @@
-#ifdef __linux
+#ifndef _WIN32
 
 #  include <iostream>
 #  include <unistd.h>

@@ -52,7 +52,7 @@ void pinitd(void)
     close(i);
   }
 
-  chdir("/tmp");
+  (int)chdir("/tmp");
   umask(0);
   return;
 }

@@ -3,6 +3,7 @@ set (FTP_SERVER_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set (FTP_SERVER_SRC ${FTP_SERVER_SRC_DIR}/main.cpp
     ${FTP_SERVER_SRC_DIR}/ftp_session.cpp
     ${FTP_SERVER_SRC_DIR}/ftp_server.cpp
+    ${FTP_SERVER_SRC_DIR}/fsutils.cpp
     ${FTP_SERVER_SRC_DIR}/initd.cpp
 )
 

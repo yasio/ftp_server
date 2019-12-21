@@ -6,6 +6,8 @@
 #include <sys/stat.h>
 #include <iostream>
 
+#include <tinydir/tinydir.h>
+
 #if YASIO__HAS_CXX17
 using namespace std;
 #  define _mksv(a) a ""sv
@@ -34,7 +36,11 @@ inline FILE* sfopen(const char* filename, const char* mode)
 #define __wanip server_.wanip_
 
 #ifdef _WIN32
-#  define stat64 _stat64
+#  define compat_stat _stat64
+#  define compat_stat_st struct _stat64
+#else
+#  define compat_stat stat
+#  define compat_stat_st struct stat
 #endif
 
 namespace nzls
@@ -456,8 +462,8 @@ void ftp_session::do_transmit()
       list_files(this->fullpath_, [&](tinydir_file& f) {
         obs.write_bytes(f.is_dir ? _mksv("dr--r--r--") : _mksv("-r--r--r--"));
         obs.write_bytes(f.is_dir ? _mksv(" 2 0 0") : _mksv(" 1 0 0"));
-        struct stat64 st;
-        if (0 == ::stat64(f.path, &st))
+        compat_stat_st st;
+        if (0 == ::compat_stat(f.path, &st))
         {
           struct tm tinfo;
           gmtime_r(&st.st_mtime, &tinfo);
@@ -488,7 +494,7 @@ void ftp_session::do_transmit()
 
       if (!obs.empty())
         __service->write(this->thandle_transfer_, std::move(obs.buffer()),
-                        [=]() { stock_reply(_mksv("226"), _mksv("Done.")); });
+                         [=]() { stock_reply(_mksv("226"), _mksv("Done.")); });
       else
         stock_reply(_mksv("226"), _mksv("Done."));
     }

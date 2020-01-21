@@ -186,7 +186,7 @@ ftp_session::ftp_session(ftp_server& server, transport_handle_t ctl)
 ftp_session::~ftp_session()
 {
   if (expire_timer_)
-    expire_timer_->unschedule();
+    expire_timer_->cancel();
 }
 
 // say hello to client, we can start ftp service
@@ -216,11 +216,12 @@ void ftp_session::start_exprie_timer()
 timer_cb_t ftp_session::create_timer_cb()
 {
   std::weak_ptr<ftp_session> this_wptr = shared_from_this();
-  return [=](bool cancelled) {
+  return [=]() {
     auto thiz = this_wptr.lock();
     if (thiz)
     {
-      if (!cancelled && !thiz->transferring_)
+      bool expired = expire_timer_->expired();
+      if (expired && !thiz->transferring_)
       { // timeout
         if (thiz->thandle_ctl_)
         {
@@ -228,11 +229,6 @@ timer_cb_t ftp_session::create_timer_cb()
           __service->close(thiz->thandle_ctl_);
           thiz->thandle_ctl_ = nullptr;
         }
-      }
-      else if (cancelled)
-      {
-        printf("%s", "the expire check timer is cancelled, start next timer!\n");
-        thiz->start_exprie_timer();
       }
     }
     else
@@ -267,7 +263,11 @@ void ftp_session::handle_packet(std::vector<char>& packet)
   auto handler_id = *reinterpret_cast<const uint32_t*>(cmd.c_str());
   auto it         = handlers_.find(handler_id);
   if (it != handlers_.end())
+  {
     it->second(this, param);
+    expire_timer_->cancel();
+    start_exprie_timer();
+  }
   else
   {
     using namespace std; // for string literal operator 'sv'
@@ -396,7 +396,7 @@ void ftp_session::process_PASV(const std::string& param)
     stock_reply("227", msg);
   }
   else
-  { // not channle to transfer data
+  { // not channel to transfer data
   }
 }
 void ftp_session::process_LIST(const std::string& param)

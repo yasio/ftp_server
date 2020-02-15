@@ -2,6 +2,8 @@
 
 #include "ftp_server.hpp"
 
+#define FTP_CONTROL_CHANNEL_INDEX 0
+
 ftp_server::ftp_server(cxx17::string_view root, cxx17::string_view wanip)
 {
   ftp_session::register_handlers_once();
@@ -35,9 +37,10 @@ void ftp_server::run(int max_clients, u_short port)
 
   service_->set_option(YOPT_S_NO_NEW_THREAD, 1);
   service_->set_option(YOPT_S_DEFERRED_EVENT, 0);
+  service_->set_option(YOPT_C_MOD_FLAGS, FTP_CONTROL_CHANNEL_INDEX, YCF_REUSEADDR, 0);
 
   service_->schedule(std::chrono::microseconds(1),
-                     [=]() { service_->open(0, YCM_TCP_SERVER); });
+                             [=]() { service_->open(FTP_CONTROL_CHANNEL_INDEX, YCM_TCP_SERVER); });
 
   service_->start_service([=](event_ptr&& ev) {
     auto thandle = ev->transport();

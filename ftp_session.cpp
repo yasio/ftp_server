@@ -382,7 +382,7 @@ void ftp_session::process_PASV(const std::string& param)
     if (!__service->is_open(cindex))
     {
       ++listening_port;
-      __service->set_option(YOPT_C_LOCAL_PORT, cindex, listening_port);
+      __service->set_option(YOPT_C_REMOTE_PORT, cindex, listening_port);
       __service->set_option(YOPT_C_MOD_FLAGS, cindex, YCF_REUSEADDR, 0);
       __service->open(cindex, YCM_TCP_SERVER);
     }
@@ -390,9 +390,9 @@ void ftp_session::process_PASV(const std::string& param)
     std::string msg = "Entering passive mode ";
     ip::endpoint ep;
     if (__wanip.empty())
-      ep.assign(thandle_ctl_->local_endpoint().ip().c_str(), channel->local_port());
+      ep.assign(thandle_ctl_->local_endpoint().ip().c_str(), channel->remote_port());
     else
-      ep.assign(__wanip.c_str(), channel->local_port());
+      ep.assign(__wanip.c_str(), channel->remote_port());
     msg += ep.to_strf_v4("(%N,%H,%L,%M,%l,%h).");
     stock_reply("227", msg);
   }

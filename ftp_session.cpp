@@ -235,6 +235,7 @@ timer_cb_t ftp_session::create_timer_cb()
     {
       printf("the session is destroyed!\n");
     }
+    return true;
   };
 }
 

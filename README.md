@@ -4,7 +4,7 @@ The binary of this project is deployed at [ftp://ftp.x-studio.net/](ftp://ftp.x-
 
 ### build and run
 #### build
-Goto the parent project's root directory, the parent project is: [yasio](https://github.com/simdsoft/yasio)  
+Goto the parent project's root directory, the parent project is: [yasio](https://github.com/yasio/yasio)  
 ```sh
 mkdir build  
 cmake ..  

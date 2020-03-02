@@ -40,7 +40,7 @@ void ftp_server::run(int max_clients, u_short port)
   service_->set_option(YOPT_C_MOD_FLAGS, FTP_CONTROL_CHANNEL_INDEX, YCF_REUSEADDR, 0);
 
   service_->schedule(std::chrono::microseconds(1), [=]() {
-    service_->open(FTP_CONTROL_CHANNEL_INDEX, YCM_TCP_SERVER);
+    service_->open(FTP_CONTROL_CHANNEL_INDEX, YCK_TCP_SERVER);
     return true;
   });
 

@@ -385,7 +385,7 @@ void ftp_session::process_PASV(const std::string& param)
       ++listening_port;
       __service->set_option(YOPT_C_REMOTE_PORT, cindex, listening_port);
       __service->set_option(YOPT_C_MOD_FLAGS, cindex, YCF_REUSEADDR, 0);
-      __service->open(cindex, YCM_TCP_SERVER);
+      __service->open(cindex, YCK_TCP_SERVER);
     }
 
     std::string msg = "Entering passive mode ";

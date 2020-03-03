@@ -1,3 +1,5 @@
+set(target_name ftp_server)
+
 set (FTP_SERVER_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 set (FTP_SERVER_SRC ${FTP_SERVER_SRC_DIR}/main.cpp
@@ -17,7 +19,7 @@ set (FTP_SERVER_INC_DIR ${FTP_SERVER_SRC_DIR}/../../)
 include_directories ("${FTP_SERVER_SRC_DIR}")
 include_directories ("${FTP_SERVER_INC_DIR}")
 
-add_executable (ftp_server ${FTP_SERVER_SRC}) 
+add_executable (${target_name} ${FTP_SERVER_SRC}) 
 
 if (WIN32)
     set (FTP_SERVER_LDLIBS yasio)
@@ -25,4 +27,6 @@ else ()
     set (FTP_SERVER_LDLIBS yasio pthread)
 endif()
 
-target_link_libraries (ftp_server ${FTP_SERVER_LDLIBS})
+target_link_libraries (${target_name} ${FTP_SERVER_LDLIBS})
+
+ConfigTargetSSL(${target_name})

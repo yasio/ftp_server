@@ -44,7 +44,7 @@ void ftp_server::run(int max_clients, u_short port)
     return true;
   });
 
-  service_->start_service([=](event_ptr&& ev) {
+  service_->start([=](event_ptr&& ev) {
     auto thandle = ev->transport();
     switch (ev->kind())
     {

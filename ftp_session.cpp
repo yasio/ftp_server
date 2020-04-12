@@ -377,7 +377,7 @@ void ftp_session::process_PASV(const std::string& param)
   static u_short listening_port = 20525;
 
   int cindex   = session_id_;
-  auto channel = __service->cindex_to_handle(cindex);
+  auto channel = __service->channel_at(cindex);
   if (channel != nullptr)
   {
     if (!__service->is_open(cindex))

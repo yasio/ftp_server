@@ -144,18 +144,18 @@ public:
   {
     if (this->fp_)
     {
-      handle_write(0);
+      handle_write();
     }
   }
 
-  void handle_write(size_t bytes_transferred)
+  void handle_write()
   {
     auto n = fread(buffer_, 1, YASIO_ARRAYSIZE(buffer_), this->fp_);
     if (n > 0)
     {
       auto self = shared_from_this();
       if (send_cb_(std::vector<char>(buffer_, buffer_ + n),
-                   std::bind(&transmit_session::handle_write, self, std::placeholders::_1)) < 0)
+                   std::bind(&transmit_session::handle_write, self)) < 0)
       {
         complete_cb_();
       }
@@ -496,7 +496,7 @@ void ftp_session::do_transmit()
 
       if (!obs.empty())
         __service->write(this->thandle_transfer_, std::move(obs.buffer()),
-                         [=](size_t) { stock_reply(_mksv("226"), _mksv("Done.")); });
+                         [=](int,size_t) { stock_reply(_mksv("226"), _mksv("Done.")); });
       else
         stock_reply(_mksv("226"), _mksv("Done."));
     }
@@ -506,7 +506,7 @@ void ftp_session::do_transmit()
       transferring_ = true;
       transmit_session::start_transmit(
           this->fullpath_,
-          [=](std::vector<char> buffer, std::function<void(size_t)> handler) {
+          [=](std::vector<char> buffer, std::function<void(int,size_t)> handler) {
             return __service->write(this->thandle_transfer_, std::move(buffer), std::move(handler));
           },
           [=]() {
@@ -554,7 +554,7 @@ void ftp_session::stock_reply(cxx17::string_view code, cxx17::string_view resp_d
   if (code == "226")
     this->status_ = transfer_status::NONE;
 
-  __service->write(this->thandle_ctl_, std::move(obs.buffer()), [=](size_t) {
+  __service->write(this->thandle_ctl_, std::move(obs.buffer()), [=](int,size_t) {
     if (code == "226" && this->thandle_transfer_ != nullptr)
     {
       __service->close(this->thandle_transfer_);

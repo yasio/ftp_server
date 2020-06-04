@@ -109,7 +109,7 @@ void ftp_server::on_open_session(event_ptr& ev)
 
 void ftp_server::on_close_session(event_ptr& ev)
 {
-  auto it = this->sessions_.find((int)ev->transport_ud());
+  auto it = this->sessions_.find(ev->transport_ud<int>());
   if (it != this->sessions_.end())
   {
     printf("the ftp session:%p is ended, cindex=%d\n", ev->transport(), it->first);

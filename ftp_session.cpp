@@ -179,7 +179,7 @@ ftp_session::ftp_session(ftp_server& server, event_ptr& ev)
     : server_(server), thandle_ctl_(ev->transport()), thandle_transfer_(nullptr),
       status_(transfer_status::NONE), transferring_(false)
 {
-  session_id_ = ev->transport_ud<int>();
+  session_id_ = ev->transport_udata<int>();
   path_       = "/";
 }
 

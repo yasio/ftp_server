@@ -51,7 +51,7 @@ void ftp_server::run(int max_clients, u_short port)
       case YEK_PACKET:
         if (ev->cindex() == 0)
         {
-          dispatch_packet(thandle, std::move(ev->packet()));
+          dispatch_packet(ev);
         }
         else
         {
@@ -63,33 +63,35 @@ void ftp_server::run(int max_clients, u_short port)
         {
           if (ev->cindex() == 0)
           {
-            on_open_session(thandle);
+            on_open_session(ev);
           }
           else
           {
-            on_open_transmit_session(ev->cindex(), thandle);
+            on_open_transmit_session(ev);
           }
         }
         break;
       case YEK_CONNECTION_LOST:
         if (ev->cindex() == 0)
         {
-          on_close_session(thandle);
+          on_close_session(ev);
         }
         break;
     }
   });
 }
 
-void ftp_server::on_open_session(transport_handle_t thandle)
+void ftp_server::on_open_session(event_ptr& ev)
 {
+  auto thandle = ev->transport();
   if (!this->avails_.empty())
   {
     auto cindex       = this->avails_.back();
-    thandle->ud_.ival = cindex;
-    auto result = this->sessions_.emplace(cindex, std::make_shared<ftp_session>(*this, thandle));
+    ev->transport_ud(cindex);
+    auto result = this->sessions_.emplace(cindex, std::make_shared<ftp_session>(*this, ev));
     if (result.second)
     {
+      printf("a ftp session:%p income, cindex=%d\n", thandle, cindex);
       this->avails_.pop_back();
       result.first->second->say_hello();
     }
@@ -105,19 +107,21 @@ void ftp_server::on_open_session(transport_handle_t thandle)
   }
 }
 
-void ftp_server::on_close_session(transport_handle_t thandle)
+void ftp_server::on_close_session(event_ptr& ev)
 {
-  auto it = this->sessions_.find(thandle->ud_.ival);
+  auto it = this->sessions_.find((int)ev->transport_ud());
   if (it != this->sessions_.end())
   {
-    printf("the ftp session:%p is ended, cindex=%d\n", thandle, it->first);
+    printf("the ftp session:%p is ended, cindex=%d\n", ev->transport(), it->first);
     this->avails_.push_back(it->first);
     this->sessions_.erase(it);
   }
 }
 
-void ftp_server::on_open_transmit_session(int cindex, transport_handle_t thandle)
+void ftp_server::on_open_transmit_session(event_ptr& ev)
 {
+  auto cindex = ev->cindex();
+  auto thandle = ev->transport();
   auto it = this->sessions_.find(cindex);
   if (it != this->sessions_.end())
   {
@@ -130,15 +134,16 @@ void ftp_server::on_open_transmit_session(int cindex, transport_handle_t thandle
   }
 }
 
-void ftp_server::dispatch_packet(transport_handle_t thandle, std::vector<char>&& packet)
+void ftp_server::dispatch_packet(event_ptr& ev)
 {
-  auto it = this->sessions_.find(thandle->ud_.ival);
+  auto it = this->sessions_.find(ev->transport_ud<int>());
   if (it != this->sessions_.end())
   {
-    it->second->handle_packet(packet);
+    it->second->handle_packet(ev->packet());
   }
   else
   {
+    auto thandle = ev->transport();
     printf("Error: cann't dispatch for a unregistered session: %p, will close it.", thandle);
     service_->close(thandle);
   }

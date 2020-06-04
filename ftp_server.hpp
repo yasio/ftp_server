@@ -9,12 +9,12 @@ public:
   ftp_server(cxx17::string_view root, cxx17::string_view wanip = "");
   void run(int max_clients = 10, u_short port = 21);
 
-  void on_open_session(transport_handle_t thandle);
+  void on_open_session(event_ptr& ev);
 
-  void on_close_session(transport_handle_t thandle);
+  void on_close_session(event_ptr& ev);
 
-  void on_open_transmit_session(int cindex, transport_handle_t thandle);
-  void dispatch_packet(transport_handle_t thandle, std::vector<char>&& packet);
+  void on_open_transmit_session(event_ptr& ev);
+  void dispatch_packet(event_ptr& ev);
 
 private:
   std::unique_ptr<io_service> service_;

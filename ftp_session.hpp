@@ -21,7 +21,7 @@ class ftp_session : public std::enable_shared_from_this<ftp_session>
   };
 
 public:
-  ftp_session(ftp_server& server, transport_handle_t ctl);
+  ftp_session(ftp_server& server, event_ptr& ev);
   ~ftp_session();
 
   // say hello to client, we can start ftp service

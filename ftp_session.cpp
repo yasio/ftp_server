@@ -175,11 +175,11 @@ public:
 
 ////////////////////////// ftp_session /////////////////////////////////
 
-ftp_session::ftp_session(ftp_server& server, transport_handle_t ctl)
-    : server_(server), thandle_ctl_(ctl), thandle_transfer_(nullptr),
+ftp_session::ftp_session(ftp_server& server, event_ptr& ev)
+    : server_(server), thandle_ctl_(ev->transport()), thandle_transfer_(nullptr),
       status_(transfer_status::NONE), transferring_(false)
 {
-  session_id_ = thandle_ctl_->ud_.ival;
+  session_id_ = ev->transport_ud<int>();
   path_       = "/";
 }
 
@@ -394,7 +394,7 @@ void ftp_session::process_PASV(const std::string& param)
       ep.assign(thandle_ctl_->local_endpoint().ip().c_str(), channel->remote_port());
     else
       ep.assign(__wanip.c_str(), channel->remote_port());
-    msg += ep.to_strf_v4("(%N,%H,%L,%M,%l,%h).");
+    msg += ep.format_v4("(%N,%H,%L,%M,%l,%h).");
     stock_reply("227", msg);
   }
   else

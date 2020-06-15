@@ -1,6 +1,6 @@
 #ifndef _WIN32
 
-#  include <iostream>
+#  include <stdio.h>
 #  include <unistd.h>
 #  include <signal.h>
 #  include <sys/param.h>
@@ -10,11 +10,8 @@
 void sighandler(int signum)
 {
   if (SIGUSR1 == signum)
-  {
-    std::cout << "catched external stop signal, now stop the server...\n";
-
-    std::cout << "post stop signals to server sucessfully.\n";
-  }
+    printf("%s", "catched external stop signal, now stop the server...\npost stop signals to "
+                 "server sucessfully.\n");
 }
 
 void sinitd(void)
@@ -27,6 +24,7 @@ void pinitd(void)
 {
   int pid;
   int i;
+  int ret = 0;
   if ((pid = fork()))
   {
     exit(0);
@@ -52,7 +50,8 @@ void pinitd(void)
     close(i);
   }
 
-  (void)chdir("/tmp");
+  ret = chdir("/tmp");
+  printf("chdir result=%d\n", ret);
   umask(0);
   return;
 }

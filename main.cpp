@@ -1,3 +1,7 @@
+/*
+* usage:
+*  ftp_server wwwroot <wanip>
+*/
 #include "ftp_server.hpp"
 
 #if !defined(_WIN32)

@@ -21,7 +21,13 @@ class ftp_session : public std::enable_shared_from_this<ftp_session>
   };
 
 public:
-  ftp_session(ftp_server& server, event_ptr& ev);
+  /// <summary>
+  /// ftp_session constructor
+  /// </summary>
+  /// <param name="server">ftp_server</param>
+  /// <param name="thandle">transport handle for control commands</param>
+  /// <param name="transfer_cindex">channel index to transfer data</param>
+  ftp_session(ftp_server& server, transport_handle_t thandle, int transfer_cindex);
   ~ftp_session();
 
   // say hello to client, we can start ftp service
@@ -65,7 +71,7 @@ private:
   transport_handle_t thandle_transfer_;
   transfer_status status_;
 
-  int session_id_;
+  int transfer_cindex_;
 
   std::string path_;
 

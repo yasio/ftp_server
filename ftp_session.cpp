@@ -175,11 +175,11 @@ public:
 
 ////////////////////////// ftp_session /////////////////////////////////
 
-ftp_session::ftp_session(ftp_server& server, event_ptr& ev)
-    : server_(server), thandle_ctl_(ev->transport()), thandle_transfer_(nullptr),
+ftp_session::ftp_session(ftp_server& server, transport_handle_t thandle, int transfer_cindex)
+    : server_(server), thandle_ctl_(thandle), thandle_transfer_(nullptr),
       status_(transfer_status::NONE), transferring_(false)
 {
-  session_id_ = ev->transport_udata<int>();
+  transfer_cindex_ = transfer_cindex;
   path_       = "/";
 }
 
@@ -187,6 +187,8 @@ ftp_session::~ftp_session()
 {
   if (expire_timer_)
     expire_timer_->cancel();
+
+  printf("the ftp_session: %p destroyed!\n", this);
 }
 
 // say hello to client, we can start ftp service
@@ -376,7 +378,7 @@ void ftp_session::process_PASV(const std::string& param)
 {
   static u_short listening_port = 20525;
 
-  int cindex   = session_id_;
+  int cindex   = transfer_cindex_;
   auto channel = __service->channel_at(cindex);
   if (channel != nullptr)
   {

@@ -27,11 +27,12 @@ void ftp_server::run(int max_clients, u_short port)
   // max support 10 clients
   std::vector<io_hostent> hosts{{"0.0.0.0", 21}};
 
-  int transfer_start_id = static_cast<int>(hosts.size());
-  for (auto i = transfer_start_id; i < transfer_start_id + max_clients; ++i)
+  transfer_start_index_ = static_cast<int>(hosts.size());
+  for (auto i = transfer_start_index_; i < transfer_start_index_ + max_clients; ++i)
   {
     hosts.push_back({"0.0.0.0", 0});
     this->avails_.push_back(i);
+    this->sessions_.push_back(ftp_session_ptr{});
   }
   service_.reset(new io_service(&hosts.front(), static_cast<int>(hosts.size())));
 
@@ -62,20 +63,14 @@ void ftp_server::run(int max_clients, u_short port)
         if (ev->status() == 0)
         {
           if (ev->cindex() == 0)
-          {
-            on_open_session(ev);
-          }
+            on_open_session(ev); // port 21
           else
-          {
-            on_open_transmit_session(ev);
-          }
+            on_open_transmit_session(ev); // data port
         }
         break;
       case YEK_CONNECTION_LOST:
         if (ev->cindex() == 0)
-        {
           on_close_session(ev);
-        }
         break;
     }
   });
@@ -86,18 +81,19 @@ void ftp_server::on_open_session(event_ptr& ev)
   auto thandle = ev->transport();
   if (!this->avails_.empty())
   {
-    auto cindex       = this->avails_.back();
-    ev->transport_udata(cindex);
-    auto result = this->sessions_.emplace(cindex, std::make_shared<ftp_session>(*this, ev));
-    if (result.second)
+    auto transfer_cindex       = this->avails_.back();
+    auto wrap            = new (std::nothrow) ftp_session_ptr(std::make_shared<ftp_session>(*this, thandle, transfer_cindex));
+    if (wrap)
     {
-      printf("a ftp session:%p income, cindex=%d\n", thandle, cindex);
+      this->sessions_[to_session_index(transfer_cindex)] = *wrap;
+      ev->transport_udata(wrap); // store ftp_session_ptr wrap to as transport userdata
+
+      printf("a ftp session: %p income, transfer_cindex=%d\n", thandle, transfer_cindex);
       this->avails_.pop_back();
-      result.first->second->say_hello();
+      (*wrap)->say_hello();
     }
     else
     {
-      assert(false);
       service_->close(thandle);
     }
   }
@@ -109,38 +105,36 @@ void ftp_server::on_open_session(event_ptr& ev)
 
 void ftp_server::on_close_session(event_ptr& ev)
 {
-  auto it = this->sessions_.find(ev->transport_udata<int>());
-  if (it != this->sessions_.end())
+  auto wrap = ev->transport_udata<ftp_session_ptr*>();
+  if (wrap)
   {
-    printf("the ftp session:%p is ended, cindex=%d\n", ev->transport(), it->first);
-    this->avails_.push_back(it->first);
-    this->sessions_.erase(it);
+    auto transfer_cindex = (*wrap)->transfer_cindex_;
+    printf("the ftp session: %p is ended, transfer_cindex=%d\n", ev->transport(), transfer_cindex);
+    this->avails_.push_back(transfer_cindex); // recyle transfer channel
+    this->sessions_[to_session_index(transfer_cindex)].reset(); // release the session
+    delete wrap; // delete wrap session object
   }
 }
 
 void ftp_server::on_open_transmit_session(event_ptr& ev)
 {
-  auto cindex = ev->cindex();
-  auto thandle = ev->transport();
-  auto it = this->sessions_.find(cindex);
-  if (it != this->sessions_.end())
-  {
-    it->second->open_transimt_session(thandle);
-  }
-  else
-  {
-    printf("Error: no ftp session for file transfer channel: %d\n", cindex);
-    service_->close(thandle);
-  }
+   auto cindex = ev->cindex();
+   auto thandle = ev->transport();
+   auto session = this->sessions_[to_session_index(cindex)];
+   if (session)
+     session->open_transimt_session(thandle);
+   else
+   {
+     printf("Error: no ftp session for file transfer channel: %d\n", cindex);
+     service_->close(thandle);
+   }
 }
 
 void ftp_server::dispatch_packet(event_ptr& ev)
 {
-  auto it = this->sessions_.find(ev->transport_udata<int>());
-  if (it != this->sessions_.end())
-  {
-    it->second->handle_packet(ev->packet());
-  }
+  auto wrap = ev->transport_udata<ftp_session_ptr*>();
+  if (wrap)
+    (*wrap)->handle_packet(ev->packet());
   else
   {
     auto thandle = ev->transport();

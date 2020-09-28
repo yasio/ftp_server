@@ -7,6 +7,7 @@ class ftp_server
 
 public:
   ftp_server(cxx17::string_view root, cxx17::string_view wanip = "");
+  ~ftp_server();
   void run(int max_clients = 10, u_short port = 21);
 
   void on_open_session(event_ptr& ev);
@@ -34,4 +35,6 @@ private:
 
   std::string root_;
   std::string wanip_;
+
+  FILE* fstats_;
 };

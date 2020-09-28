@@ -4,7 +4,7 @@
 
 #define FTP_CONTROL_CHANNEL_INDEX 0
 
-int g_stats_hits = 0;
+long long g_stats_hits = 0;
 
 ftp_server::ftp_server(cxx17::string_view root, cxx17::string_view wanip)
 {
@@ -149,7 +149,7 @@ void ftp_server::dispatch_packet(event_ptr& ev)
     if (fstats_)
     {
       rewind(fstats_);
-      fprintf(fstats_, "The commands processed totals=%d", g_stats_hits);
+      fprintf(fstats_, "The commands processed totals=%lld", g_stats_hits);
       fflush(fstats_);
     }
   }

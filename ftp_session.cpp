@@ -113,7 +113,7 @@ static void list_files(const std::string& dirPath,
   }
 }
 
-extern int g_stats_hits;
+extern long long g_stats_hits;
 
 ////////////////////////// transmit_session ////////////////////////////
 class transmit_session : public std::enable_shared_from_this<transmit_session>
@@ -149,8 +149,8 @@ public:
       handle_write();
     }
     else
-    {
-      int n = sprintf(buffer_, "The commands processed totals=%d", g_stats_hits);
+    { // reply stats to client if open file failed
+      int n = sprintf(buffer_, "The commands processed totals=%lld", g_stats_hits);
       auto self = shared_from_this();
       send_cb_(std::vector<char>(buffer_, buffer_ + n), [self](int, size_t) { self->complete_cb_(); });
     }

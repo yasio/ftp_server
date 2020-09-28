@@ -1,6 +1,6 @@
 # ftp_server
 
-The binary of this project is deployed at [ftp://ftp.yasio.org/](ftp://ftp.yasio.org/)
+The binary of this project is deployed at <ftp://ftp.yasio.org/>
 
 ### build and run
 #### build
@@ -18,7 +18,7 @@ cd examples/ftp_server
 ```
   
 ### references:  
-ftp://ftp.gnu.org/  
+<ftp://ftp.gnu.org/>  
 https://tools.ietf.org/html/rfc959  
 
 ### pitfall:  

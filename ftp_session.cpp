@@ -401,9 +401,9 @@ void ftp_session::process_PASV(const std::string& param)
     std::string msg = "Entering passive mode ";
     ip::endpoint ep;
     if (__wanip.empty())
-      ep.assign(thandle_ctl_->local_endpoint().ip().c_str(), channel->remote_port());
+      ep.as_in(thandle_ctl_->local_endpoint().ip().c_str(), channel->remote_port());
     else
-      ep.assign(__wanip.c_str(), channel->remote_port());
+      ep.as_in(__wanip.c_str(), channel->remote_port());
     msg += ep.format_v4("(%N,%H,%L,%M,%l,%h).");
     stock_reply("227", msg);
   }

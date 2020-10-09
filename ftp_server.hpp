@@ -20,7 +20,7 @@ public:
   int to_session_index(int transfer_index) {
     assert(transfer_index >= transfer_start_index_);
     auto session_index = transfer_index - transfer_start_index_;
-    assert(session_index < this->sessions_.size());
+    assert(static_cast<size_t>(session_index) < this->sessions_.size());
     return session_index;
   }
 

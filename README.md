@@ -6,14 +6,13 @@ The binary of this project is deployed at <ftp://ftp.yasio.org/>
 #### build
 Goto the parent project's root directory, the parent project is: [yasio](https://github.com/yasio/yasio)  
 ```sh
-mkdir build  
-cmake ..  
-cmake --build . --config Release --target ftp_server  
+cmake -B build
+cmake --build build --config Release --target ftp_server  
 ```
 #### run
 Continue run ftp server after build finished  
 ```sh
-cd examples/ftp_server  
+cd build/examples/ftp_server  
 ./ftp_server <path-to-wwwroot> <wan_ip>[optional]  
 ```
   

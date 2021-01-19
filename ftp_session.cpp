@@ -226,7 +226,7 @@ void ftp_session::start_exprie_timer()
 timer_cb_t ftp_session::create_timer_cb()
 {
   std::weak_ptr<ftp_session> this_wptr = shared_from_this();
-  return [=]() {
+  return [=](io_service&) {
     auto thiz = this_wptr.lock();
     if (thiz)
     {

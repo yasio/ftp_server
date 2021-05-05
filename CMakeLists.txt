@@ -29,4 +29,4 @@ endif()
 
 target_link_libraries (${target_name} ${FTP_SERVER_LDLIBS})
 
-ConfigTargetSSL(${target_name})
+ConfigTargetDepends(${target_name})

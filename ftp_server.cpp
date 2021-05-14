@@ -55,32 +55,48 @@ void ftp_server::run(int max_clients, u_short port)
   });
 
   service_->start([=](event_ptr&& ev) {
-    auto thandle = ev->transport();
-    switch (ev->kind())
+    if (!ev->passive())
     {
-      case YEK_PACKET:
-        if (ev->cindex() == 0)
-        {
-          dispatch_packet(ev);
-        }
-        else
-        {
-          ; // ignore
-        }
-        break;
-      case YEK_CONNECT_RESPONSE:
-        if (ev->status() == 0)
-        {
+      switch (ev->kind())
+      {
+        case YEK_PACKET:
           if (ev->cindex() == 0)
-            on_open_session(ev); // port 21
+          {
+            dispatch_packet(ev);
+          }
           else
-            on_open_transmit_session(ev); // data port
-        }
-        break;
-      case YEK_CONNECTION_LOST:
-        if (ev->cindex() == 0)
-          on_close_session(ev);
-        break;
+          {
+            ; // ignore
+          }
+          break;
+        case YEK_ON_OPEN:
+          if (ev->status() == 0)
+          {
+            if (ev->cindex() == 0)
+              on_open_session(ev); // port 21
+            else
+              on_open_transmit_session(ev); // data port
+          }
+          break;
+        case YEK_ON_CLOSE:
+          if (ev->cindex() == 0)
+            on_close_session(ev);
+          break;
+      }
+    }
+    else
+    {
+      switch (ev->kind())
+      {
+        case YEK_ON_OPEN:
+          if (ev->status() == 0)
+            printf("%s", "start ftp server sucess.\n");
+          else
+            printf("start ftp server failed, status=%d\n", ev->status());
+          break;
+        case YEK_ON_CLOSE:
+          break;
+      }
     }
   });
 }
@@ -95,7 +111,7 @@ void ftp_server::on_open_session(event_ptr& ev)
     if (wrap)
     {
       this->sessions_[to_session_index(transfer_cindex)] = *wrap;
-      ev->transport_udata(wrap); // store ftp_session_ptr wrap to as transport userdata
+      ev->transport_ud(wrap); // store ftp_session_ptr wrap to as transport userdata
 
       printf("a ftp session: %p income, transfer_cindex=%d\n", thandle, transfer_cindex);
       this->avails_.pop_back();
@@ -114,7 +130,7 @@ void ftp_server::on_open_session(event_ptr& ev)
 
 void ftp_server::on_close_session(event_ptr& ev)
 {
-  auto wrap = ev->transport_udata<ftp_session_ptr*>();
+  auto wrap = ev->transport_ud<ftp_session_ptr*>();
   if (wrap)
   {
     auto transfer_cindex = (*wrap)->transfer_cindex_;
@@ -141,7 +157,7 @@ void ftp_server::on_open_transmit_session(event_ptr& ev)
 
 void ftp_server::dispatch_packet(event_ptr& ev)
 {
-  auto wrap = ev->transport_udata<ftp_session_ptr*>();
+  auto wrap = ev->transport_ud<ftp_session_ptr*>();
   if (wrap)
   {
     (*wrap)->handle_packet(ev->packet());

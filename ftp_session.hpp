@@ -6,7 +6,6 @@
 #include <unordered_map>
 
 using namespace yasio;
-using namespace yasio::inet;
 
 typedef uint32_t ftp_cmd_id_t;
 class ftp_server;

@@ -21,12 +21,4 @@ include_directories ("${FTP_SERVER_INC_DIR}")
 
 add_executable (${target_name} ${FTP_SERVER_SRC}) 
 
-if (WIN32)
-    set (FTP_SERVER_LDLIBS yasio)
-else ()
-    set (FTP_SERVER_LDLIBS yasio pthread)
-endif()
-
-target_link_libraries (${target_name} ${FTP_SERVER_LDLIBS})
-
-ConfigTargetDepends(${target_name})
+yasio_config_app_depends(${target_name})

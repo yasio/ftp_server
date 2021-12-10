@@ -33,7 +33,7 @@ public:
   void say_hello();
   void start_exprie_timer();
   timer_cb_t create_timer_cb();
-  void handle_packet(std::vector<char>& packet);
+  void handle_packet(yasio::io_packet& packet);
   void stock_reply(cxx17::string_view code, cxx17::string_view resp_data, bool finished = true,
                    bool ispath = false);
 

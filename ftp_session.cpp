@@ -249,7 +249,7 @@ timer_cb_t ftp_session::create_timer_cb()
   };
 }
 
-void ftp_session::handle_packet(std::vector<char>& packet)
+void ftp_session::handle_packet(yasio::io_packet& packet)
 {
   cxx17::string_view algsv(packet.data(), packet.size());
   size_t crlf;

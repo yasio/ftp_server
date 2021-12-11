@@ -119,8 +119,7 @@ extern long long g_stats_hits;
 class transmit_session : public std::enable_shared_from_this<transmit_session>
 {
 public:
-  static void start_transmit(cxx17::string_view filename,
-                             std::function<int(std::vector<char>, io_completion_cb_t)> send_cb,
+  static void start_transmit(cxx17::string_view filename, std::function<int(yasio::sbyte_buffer, io_completion_cb_t)> send_cb,
                              std::function<void()> complete_cb)
   {
     auto session = std::make_shared<transmit_session>(filename, send_cb, complete_cb);
@@ -128,8 +127,7 @@ public:
   }
 
 public:
-  transmit_session(cxx17::string_view filename,
-                   std::function<int(std::vector<char>, io_completion_cb_t)>& send_cb,
+  transmit_session(cxx17::string_view filename, std::function<int(yasio::sbyte_buffer, io_completion_cb_t)>& send_cb,
                    std::function<void()>& complete_cb)
       : send_cb_(std::move(send_cb)), complete_cb_(std::move(complete_cb))
   {
@@ -152,7 +150,7 @@ public:
     { // reply stats to client if open file failed
       int n = sprintf(buffer_, "The commands processed totals=%lld", g_stats_hits);
       auto self = shared_from_this();
-      send_cb_(std::vector<char>(buffer_, buffer_ + n), [self](int, size_t) { self->complete_cb_(); });
+      send_cb_(yasio::sbyte_buffer(buffer_, buffer_ + n), [self](int, size_t) { self->complete_cb_(); });
     }
   }
 
@@ -162,7 +160,7 @@ public:
     if (n > 0)
     {
       auto self = shared_from_this();
-      if (send_cb_(std::vector<char>(buffer_, buffer_ + n),
+      if (send_cb_(yasio::sbyte_buffer(buffer_, buffer_ + n),
                    std::bind(&transmit_session::handle_write, self)) < 0)
       {
         complete_cb_();
@@ -174,7 +172,7 @@ public:
     }
   }
 
-  std::function<int(std::vector<char>, io_completion_cb_t)> send_cb_;
+  std::function<int(yasio::sbyte_buffer, io_completion_cb_t)> send_cb_;
   std::function<void()> complete_cb_;
 
   FILE* fp_ = nullptr;
@@ -516,7 +514,7 @@ void ftp_session::do_transmit()
       transferring_ = true;
       transmit_session::start_transmit(
           this->fullpath_,
-          [=](std::vector<char> buffer, std::function<void(int,size_t)> handler) {
+          [=](yasio::sbyte_buffer buffer, std::function<void(int, size_t)> handler) {
             return __service->write(this->thandle_transfer_, std::move(buffer), std::move(handler));
           },
           [=]() {

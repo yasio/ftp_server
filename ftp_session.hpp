@@ -72,8 +72,7 @@ private:
 
   int transfer_cindex_;
 
-  std::string path_;
-
+  std::string path_; // working path
   std::string fullpath_;
 
   deadline_timer_ptr expire_timer_;

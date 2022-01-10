@@ -2,20 +2,6 @@
 
 namespace fsutils
 {
-bool is_absolute_path(cxx17::string_view path)
-{
-  const char* raw = path.data();
-#if defined(_WIN32)
-  // see also: https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file?redirectedfrom=MSDN
-  return ((path.length() > 2 && ((raw[0] >= 'a' && raw[0] <= 'z') || (raw[0] >= 'A' && raw[0] <= 'Z')) && raw[1] == ':') // Normal absolute path
-          || cxx20::starts_with(path, R"(\\?\)")                                                                         // Win32 File Namespaces for Long Path
-          || cxx20::starts_with(path, R"(\\.\)")                                                                         // Win32 Device Namespaces for device
-          || (raw[0] == '/' || raw[0] == '\\')                                                                           // Current disk drive
-  );
-#else
-  return (raw[0] == '/');
-#endif
-}
 #if defined(_WIN32)
 bool is_dir_exists(cxx17::string_view path)
 {

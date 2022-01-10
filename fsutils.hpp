@@ -7,5 +7,4 @@ namespace fsutils
 bool is_dir_exists(cxx17::string_view path);
 bool is_file_exists(cxx17::string_view path);
 long long get_file_size(cxx17::string_view path);
-bool is_absolute_path(cxx17::string_view path);
 } // namespace fsutils

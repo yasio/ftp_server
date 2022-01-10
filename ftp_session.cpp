@@ -300,14 +300,15 @@ void ftp_session::process_TYPE(const std::string& mode)
 void ftp_session::process_SIZE(const std::string& path)
 {
   std::string fullpath = __root + path;
-  auto size            = fsutils::get_file_size(fullpath);
+  bool isdir           = false;
+  auto size            = fsutils::get_file_size(fullpath, isdir);
   if (size > 0)
   {
     stock_reply(_mksv("213"), std::to_string(size));
   }
   else
   {
-    stock_reply(_mksv("550"), fsutils::is_dir_exists(fullpath) ? _mksv("not a plain file.") : _mksv("No such file or directory."));
+    stock_reply(_mksv("550"), isdir ? _mksv("not a plain file.") : _mksv("No such file or directory."));
   }
 }
 void ftp_session::process_CDUP(const std::string& /*param*/) { process_CWD(".."); }

@@ -27,7 +27,7 @@ long long get_file_size(cxx17::string_view path, bool& isdir)
       isdir = true;
   return -1;
 }
-#if defined(_WIN32)
+#if defined(_WIN32) && !defined(__MINGW64__) && !defined(__MINGW32__)
 static bool is_dir_exists_wide(const wchar_t* path);
 bool is_dir_exists(cxx17::wstring_view path) { return is_dir_exists_wide(path.data()); }
 bool is_file_exists(cxx17::wstring_view path)

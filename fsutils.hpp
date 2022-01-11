@@ -2,11 +2,8 @@
 #include "tinydir/tinydir.h"
 #include <functional>
 #include "yasio/cxx17/string_view.hpp"
-#if defined(_WIN32)
+#if defined(_WIN32) && !defined(__MINGW64__) && !defined(__MINGW32__)
 #  include "ntcvt/ntcvt.hpp"
-#endif
-
-#if defined(_WIN32)
 #  define gmtime_r(tp, tr) gmtime_s(tr, tp)
 #  define posix_stat_st struct _stat64
 #  define posix_stat _stati64
@@ -25,7 +22,7 @@ namespace fsutils
 {
 bool is_dir_exists(cxx17::string_view path);
 bool is_file_exists(cxx17::string_view path);
-#if defined(_WIN32)
+#if defined(_WIN32) && !defined(__MINGW64__) && !defined(__MINGW32__)
 bool is_dir_exists(cxx17::wstring_view path);
 bool is_file_exists(cxx17::wstring_view path);
 #endif

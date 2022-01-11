@@ -20,97 +20,9 @@ inline cxx17::string_view _mksv(const char (&strLiteral)[size])
 #  define u8
 #endif
 
-#if defined(_WIN32)
-#  define gmtime_r(tp, tr) gmtime_s(tr, tp)
-inline FILE* sfopen(const char* filename, const char* mode)
-{
-  FILE* fp = nullptr;
-  fopen_s(&fp, filename, mode);
-  return fp;
-}
-#else
-#  define sfopen fopen
-#endif
-
 #define __service server_.service_
 #define __wwwroot server_.root_
 #define __wanip server_.wanip_
-
-#ifdef _WIN32
-#  define compat_stat _stat64
-#  define compat_stat_st struct _stat64
-#else
-#  define compat_stat stat
-#  define compat_stat_st struct stat
-#endif
-
-namespace nzls
-{
-template <typename _CStr, typename _Fn>
-inline void fast_split_of(_CStr s, size_t slen, const typename std::remove_pointer<_CStr>::type* delims, _Fn func)
-{
-  auto _Start = s; // the start of every string
-  auto _Ptr   = s; // source string iterator
-  auto _End   = s + slen;
-  auto _Delim = delims[0];
-  while ((_Ptr = strpbrk(_Ptr, delims)))
-  {
-    if (_Start < _Ptr)
-    {
-      func(_Start, _Ptr, _Delim);
-      _Delim = *_Ptr;
-    }
-    _Start = _Ptr + 1;
-    ++_Ptr;
-  }
-  if (_Start < _End)
-  {
-    func(_Start, _End, _Delim);
-  }
-}
-template <typename _Elem, typename _Fn>
-inline void fast_split_of(cxx17::basic_string_view<_Elem> s, const _Elem* delims, _Fn func)
-{
-  return fast_split_of(s.data(), s.length(), delims, func);
-}
-} // namespace nzls
-
-static void list_files(const std::string& dirPath, const std::function<void(tinydir_file&)>& callback, bool recursively = false)
-{
-  if (fsutils::is_dir_exists(dirPath))
-  {
-    tinydir_dir dir;
-    std::string fullpathstr = dirPath;
-
-    if (tinydir_open(&dir, &fullpathstr[0]) != -1)
-    {
-      while (dir.has_next)
-      {
-        tinydir_file file;
-        if (tinydir_readfile(&dir, &file) == -1)
-        {
-          // Error getting file
-          break;
-        }
-        std::string fileName = file.name;
-
-        if (fileName != "." && fileName != "..")
-        {
-          callback(file);
-          if (file.is_dir && recursively)
-            list_files(file.path, callback, recursively);
-        }
-
-        if (tinydir_next(&dir) == -1)
-        {
-          // Error getting next file
-          break;
-        }
-      }
-    }
-    tinydir_close(&dir);
-  }
-}
 
 extern long long g_stats_hits;
 
@@ -184,6 +96,47 @@ inline void ensure_dir_slash(std::string& path)
 {
   if (!path.empty() && path.back() != '/')
     path.push_back('/');
+}
+namespace nzls
+{
+template <typename _CStr, typename _Fn>
+inline void fast_split_of(_CStr s, size_t slen, const typename std::remove_pointer<_CStr>::type* delims, _Fn func)
+{
+  auto _Start = s; // the start of every string
+  auto _Ptr   = s; // source string iterator
+  auto _End   = s + slen;
+  auto _Delim = delims[0];
+  while ((_Ptr = strpbrk(_Ptr, delims)))
+  {
+    if (_Start < _Ptr)
+    {
+      func(_Start, _Ptr, _Delim);
+      _Delim = *_Ptr;
+    }
+    _Start = _Ptr + 1;
+    ++_Ptr;
+  }
+  if (_Start < _End)
+  {
+    func(_Start, _End, _Delim);
+  }
+}
+template <typename _Elem, typename _Fn>
+inline void fast_split_of(cxx17::basic_string_view<_Elem> s, const _Elem* delims, _Fn func)
+{
+  return fast_split_of(s.data(), s.length(), delims, func);
+}
+} // namespace nzls
+static bool verify_path(cxx17::string_view path, bool isdir)
+{ // verify path to disallow access out of wwwroot on local filesystem
+  int total = isdir ? 0 : -1;
+  int upcnt = 0;
+  nzls::fast_split_of(path, R"(/\)", [&](const char* s, const char* e, char) {
+    ++total;
+    if (e - s == 2 && *s == '.' && s[1] == '.')
+      ++upcnt;
+  });
+  return upcnt <= (total / 2);
 }
 } // namespace www
 
@@ -339,18 +292,6 @@ void ftp_session::process_SIZE(const std::string& param)
   }
 }
 void ftp_session::process_CDUP(const std::string& /*param*/) { process_CWD(".."); }
-
-static bool verify_path(cxx17::string_view path, bool isdir)
-{ // verify path to disallow access out of wwwroot on local filesystem
-  int total = isdir ? 0 : -1;
-  int upcnt = 0;
-  nzls::fast_split_of(path, R"(/\)", [&](const char* s, const char* e, char) {
-    ++total;
-    if (e - s == 2 && *s == '.' && s[1] == '.')
-      ++upcnt;
-  });
-  return upcnt <= (total / 2);
-}
 void ftp_session::process_CWD(const std::string& param)
 {
   std::string path = dir_;
@@ -376,7 +317,7 @@ void ftp_session::process_CWD(const std::string& param)
       path.append(param);
   }
   www::ensure_dir_slash(path);
-  if (verify_path(path, true))
+  if (www::verify_path(path, true))
   {
     if (fsutils::is_dir_exists(to_fspath(path)))
     {
@@ -429,7 +370,7 @@ void ftp_session::process_LIST(const std::string& /*param*/)
 void ftp_session::process_RETR(const std::string& param)
 {
   std::string path = www::is_absolute_path(param) ? param : dir_ + param;
-  if (verify_path(path, false))
+  if (www::verify_path(path, false))
   {
     if (fsutils::is_file_exists(to_fspath(path)))
     {
@@ -467,11 +408,11 @@ void ftp_session::do_transmit()
       struct tm daytm;
       gmtime_r(&tval, &daytm);
 
-      list_files(this->fspath_, [&](tinydir_file& f) {
+      fsutils::list_files(this->fspath_, [&](tinydir_file& f) {
         obs.write_bytes(f.is_dir ? _mksv("dr--r--r--") : _mksv("-r--r--r--"));
         obs.write_bytes(f.is_dir ? _mksv(" 2 0 0") : _mksv(" 1 0 0"));
-        compat_stat_st st;
-        if (0 == ::compat_stat(f.path, &st))
+        posix_stat_st st;
+        if (0 == posix_stat(f.path, &st))
         {
           struct tm tinfo;
           gmtime_r(&st.st_mtime, &tinfo);
@@ -482,9 +423,7 @@ void ftp_session::do_transmit()
             obs.write_bytes(std::to_string(st.st_size));
           }
           else
-          {
             obs.write_bytes(_mksv(" 0"));
-          }
 
           char buf[96];
 #if defined(_MSC_VER) && _MSC_VER < 1900

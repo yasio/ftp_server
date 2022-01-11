@@ -20,6 +20,10 @@ inline cxx17::string_view _mksv(const char (&strLiteral)[size])
 #  define u8
 #endif
 
+#if defined(_WIN32)
+#  define gmtime_r(tp, tr) gmtime_s(tr, tp)
+#endif
+
 #define __service server_.service_
 #define __wwwroot server_.root_
 #define __wanip server_.wanip_

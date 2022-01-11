@@ -4,7 +4,6 @@
 #include "yasio/cxx17/string_view.hpp"
 #if defined(_WIN32) && !defined(__MINGW64__) && !defined(__MINGW32__)
 #  include "ntcvt/ntcvt.hpp"
-#  define gmtime_r(tp, tr) gmtime_s(tr, tp)
 #  define posix_stat_st struct _stat64
 #  define posix_stat _stati64
 #  define posix_ustat _wstati64

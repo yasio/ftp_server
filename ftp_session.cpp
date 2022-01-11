@@ -29,18 +29,17 @@ extern long long g_stats_hits;
 ////////////////////////// transmit_session ////////////////////////////
 class transmit_session : public std::enable_shared_from_this<transmit_session> {
 public:
-  static void start_transmit(cxx17::string_view filename, std::function<int(yasio::sbyte_buffer, io_completion_cb_t)> send_cb,
-                             std::function<void()> complete_cb)
+  template <typename... _Types>
+  static void start_transmit(_Types&&... args)
   {
-    auto session = std::make_shared<transmit_session>(filename, send_cb, complete_cb);
-    session->start();
+    std::make_shared<transmit_session>(std::forward<_Types>(args)...)->start();
   }
 
 public:
-  transmit_session(cxx17::string_view filename, std::function<int(yasio::sbyte_buffer, io_completion_cb_t)>& send_cb, std::function<void()>& complete_cb)
+  transmit_session(const std::string& filename, std::function<int(yasio::sbyte_buffer, io_completion_cb_t)> send_cb, std::function<void()> complete_cb)
       : send_cb_(std::move(send_cb)), complete_cb_(std::move(complete_cb))
   {
-    this->fp_ = sfopen(filename.data(), "rb");
+    this->fp_ = posix_fopen(filename, "rb");
   }
   ~transmit_session()
   {
@@ -319,7 +318,7 @@ void ftp_session::process_CWD(const std::string& param)
   www::ensure_dir_slash(path);
   if (www::verify_path(path, true))
   {
-    if (fsutils::is_dir_exists(to_fspath(path)))
+    if (fsutils::is_dir_exists(posix_upath(to_fspath(path))))
     {
       this->dir_ = path;
       stock_reply(_mksv("250"), _mksv("OK."));
@@ -372,7 +371,7 @@ void ftp_session::process_RETR(const std::string& param)
   std::string path = www::is_absolute_path(param) ? param : dir_ + param;
   if (www::verify_path(path, false))
   {
-    if (fsutils::is_file_exists(to_fspath(path)))
+    if (fsutils::is_file_exists(posix_upath(to_fspath(path))))
     {
       stock_reply(_mksv("150"), _mksv("Opening BINARY mode for file transfer."));
       status_ = ftp_session::transfer_status::FILE;
@@ -412,7 +411,7 @@ void ftp_session::do_transmit()
         obs.write_bytes(f.is_dir ? _mksv("dr--r--r--") : _mksv("-r--r--r--"));
         obs.write_bytes(f.is_dir ? _mksv(" 2 0 0") : _mksv(" 1 0 0"));
         posix_stat_st st;
-        if (0 == posix_stat(f.path, &st))
+        if (0 == posix_ustat(f.path, &st))
         {
           struct tm tinfo;
           gmtime_r(&st.st_mtime, &tinfo);
@@ -435,7 +434,7 @@ void ftp_session::do_transmit()
         }
 
         obs.write_byte(' ');
-        obs.write_bytes(f.name);
+        obs.write_bytes(posix_upath(f.name));
         obs.write_byte('\n');
       });
 

@@ -407,7 +407,7 @@ void ftp_session::process_PASV(const std::string& /*param*/)
 
     std::string msg = "Entering passive mode ";
     ip::endpoint ep;
-    if (__wanip.empty())
+    if (__wanip.empty() && thandle_ctl_)
       ep.as_in(thandle_ctl_->local_endpoint().ip().c_str(), channel->remote_port());
     else
       ep.as_in(__wanip.c_str(), channel->remote_port());
@@ -418,6 +418,7 @@ void ftp_session::process_PASV(const std::string& /*param*/)
   { // not channel to transfer data
   }
 }
+void ftp_session::process_EPSV(const std::string& /*param*/) { stock_reply(_mksv("522"), _mksv("EPSV Unsupported.")); }
 void ftp_session::process_LIST(const std::string& /*param*/)
 {
   stock_reply(_mksv("150"), _mksv("Sending directory listing."));
@@ -531,6 +532,8 @@ void ftp_session::do_transmit()
 
 void ftp_session::stock_reply(cxx17::string_view code, cxx17::string_view resp_data, bool finished, bool ispath)
 {
+  if (!this->thandle_ctl_)
+    return;
   printf("Reponse:%s, msg: %s\n", code.data(), resp_data.data());
 
   obstream obs;
@@ -581,6 +584,7 @@ void ftp_session::register_handlers_once()
     XSFTPD_REGISTER(CWD);
     XSFTPD_REGISTER(CDUP);
     XSFTPD_REGISTER(PASV);
+    XSFTPD_REGISTER(EPSV);
     XSFTPD_REGISTER(LIST);
     XSFTPD_REGISTER(RETR);
     XSFTPD_REGISTER(QUIT);

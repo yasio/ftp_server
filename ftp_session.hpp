@@ -49,6 +49,7 @@ public:
   void process_CDUP(const std::string& /*param*/);
   void process_CWD(const std::string& param);
   void process_PASV(const std::string& param);
+  void process_EPSV(const std::string& /*param*/);
   void process_LIST(const std::string& param);
   void process_RETR(const std::string& param);
   void process_QUIT(const std::string& param);

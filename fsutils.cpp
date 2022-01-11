@@ -33,4 +33,9 @@ long long get_file_size(cxx17::string_view path, bool& isdir)
       isdir = true;
   return -1;
 }
+#if defined(_WIN32)
+void to_styled_path(std::string& path) { std::replace(path.begin(), path.end(), '/', '\\'); }
+#else
+void to_styled_path(std::string& /*path*/) {}
+#endif
 } // namespace fsutils

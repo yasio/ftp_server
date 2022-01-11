@@ -33,7 +33,7 @@ inline FILE* sfopen(const char* filename, const char* mode)
 #endif
 
 #define __service server_.service_
-#define __root server_.root_
+#define __wwwroot server_.root_
 #define __wanip server_.wanip_
 
 #ifdef _WIN32
@@ -177,11 +177,21 @@ public:
 
 ////////////////////////// ftp_session /////////////////////////////////
 
+namespace www
+{
+inline bool is_absolute_path(const std::string& path) { return *path.c_str() == '/'; }
+inline void ensure_dir_slash(std::string& path)
+{
+  if (!path.empty() && path.back() != '/')
+    path.push_back('/');
+}
+} // namespace www
+
 ftp_session::ftp_session(ftp_server& server, transport_handle_t thandle, int transfer_cindex)
     : server_(server), thandle_ctl_(thandle), thandle_transfer_(nullptr), status_(transfer_status::NONE), transferring_(false)
 {
   transfer_cindex_ = transfer_cindex;
-  path_            = "/";
+  dir_             = "/"; // web current working directory
 }
 
 ftp_session::~ftp_session()
@@ -190,6 +200,24 @@ ftp_session::~ftp_session()
     expire_timer_->cancel(*__service);
 
   printf("the ftp_session: %p destroyed!\n", this);
+}
+
+const std::string& ftp_session::to_fspath()
+{
+  this->fspath_ = __wwwroot;
+  this->fspath_.append(this->dir_);
+  fsutils::to_styled_path(this->fspath_);
+  return this->fspath_;
+}
+const std::string& ftp_session::to_fspath(const std::string& param)
+{
+  this->fspath_ = __wwwroot;
+  if (www::is_absolute_path(param))
+    this->fspath_.append(param);
+  else
+    this->fspath_.append(this->dir_).append(param);
+  fsutils::to_styled_path(this->fspath_);
+  return this->fspath_;
 }
 
 // say hello to client, we can start ftp service
@@ -292,16 +320,15 @@ void ftp_session::process_SYST(const std::string& /*param*/)
 { // The firefox will check the system type
   stock_reply(_mksv("215"), _mksv("WINDOWS"));
 }
-void ftp_session::process_PWD(const std::string& /*param*/) { stock_reply(_mksv("215"), this->path_, true, true); }
+void ftp_session::process_PWD(const std::string& /*param*/) { stock_reply(_mksv("215"), this->dir_, true, true); }
 void ftp_session::process_TYPE(const std::string& mode)
 {
   stock_reply(_mksv("200"), mode == "I" ? _mksv("Switching to Binary mode.") : _mksv("Switching to ASCII mode."));
 }
-void ftp_session::process_SIZE(const std::string& path)
+void ftp_session::process_SIZE(const std::string& param)
 {
-  std::string fullpath = __root + path;
-  bool isdir           = false;
-  auto size            = fsutils::get_file_size(fullpath, isdir);
+  bool isdir = false;
+  auto size  = fsutils::get_file_size(to_fspath(param), isdir);
   if (size > 0)
   {
     stock_reply(_mksv("213"), std::to_string(size));
@@ -314,7 +341,7 @@ void ftp_session::process_SIZE(const std::string& path)
 void ftp_session::process_CDUP(const std::string& /*param*/) { process_CWD(".."); }
 
 static bool verify_path(cxx17::string_view path, bool isdir)
-{
+{ // verify path to disallow access out of wwwroot on local filesystem
   int total = isdir ? 0 : -1;
   int upcnt = 0;
   nzls::fast_split_of(path, R"(/\)", [&](const char* s, const char* e, char) {
@@ -326,11 +353,12 @@ static bool verify_path(cxx17::string_view path, bool isdir)
 }
 void ftp_session::process_CWD(const std::string& param)
 {
-  std::string path = path_;
+  std::string path = dir_;
   if (param == "..")
   {
     if (path.size() > 1)
     {
+      path.resize(path.length() - 1); // remove the dir last slash
       auto offset = path.find_last_of('/');
       if (offset != std::string::npos)
       {
@@ -342,20 +370,17 @@ void ftp_session::process_CWD(const std::string& param)
   }
   else
   {
-    if (*param.c_str() == '/')
+    if (www::is_absolute_path(param))
       path = param;
     else
-    {
-      if (path.back() != '/')
-        path.push_back('/');
       path.append(param);
-    }
   }
+  www::ensure_dir_slash(path);
   if (verify_path(path, true))
   {
-    if (fsutils::is_dir_exists(__root + path))
+    if (fsutils::is_dir_exists(to_fspath(path)))
     {
-      this->path_ = path;
+      this->dir_ = path;
       stock_reply(_mksv("250"), _mksv("OK."));
     }
     else
@@ -396,26 +421,19 @@ void ftp_session::process_PASV(const std::string& /*param*/)
 void ftp_session::process_LIST(const std::string& /*param*/)
 {
   stock_reply(_mksv("150"), _mksv("Sending directory listing."));
-  status_         = ftp_session::transfer_status::LIST;
-  this->fullpath_ = __root + path_;
+  status_ = ftp_session::transfer_status::LIST;
+  to_fspath();
   this->do_transmit();
 }
 void ftp_session::process_RETR(const std::string& param)
 {
-  std::string path = param;
-  if (*param.c_str() == '/')
-    path = path;
-  else
-    path = path_ + "/" + param;
-
+  std::string path = www::is_absolute_path(param) ? param : dir_ + param;
   if (verify_path(path, false))
   {
-    std::string fullpath = __root + path;
-    if (fsutils::is_file_exists(fullpath))
+    if (fsutils::is_file_exists(to_fspath(path)))
     {
       stock_reply(_mksv("150"), _mksv("Opening BINARY mode for file transfer."));
-      status_         = ftp_session::transfer_status::FILE;
-      this->fullpath_ = fullpath;
+      status_ = ftp_session::transfer_status::FILE;
       this->do_transmit();
       return;
     }
@@ -448,7 +466,7 @@ void ftp_session::do_transmit()
       struct tm daytm;
       gmtime_r(&tval, &daytm);
 
-      list_files(this->fullpath_, [&](tinydir_file& f) {
+      list_files(this->fspath_, [&](tinydir_file& f) {
         obs.write_bytes(f.is_dir ? _mksv("dr--r--r--") : _mksv("-r--r--r--"));
         obs.write_bytes(f.is_dir ? _mksv(" 2 0 0") : _mksv(" 1 0 0"));
         compat_stat_st st;
@@ -488,10 +506,10 @@ void ftp_session::do_transmit()
     }
     else if (this->status_ == transfer_status::FILE)
     {
-      printf("FTP-DATA: start transfer file: %s...\n", this->fullpath_.c_str());
+      printf("FTP-DATA: start transfer file: %s...\n", this->fspath_.c_str());
       transferring_ = true;
       transmit_session::start_transmit(
-          this->fullpath_,
+          this->fspath_,
           [=](yasio::sbyte_buffer buffer, std::function<void(int, size_t)> handler) {
             return __service->write(this->thandle_transfer_, std::move(buffer), std::move(handler));
           },

@@ -64,6 +64,9 @@ public:
 
   void do_transmit();
 
+  const std::string& to_fspath();
+  const std::string& to_fspath(const std::string& param);
+
 private:
   ftp_server& server_;
   transport_handle_t thandle_ctl_;
@@ -72,8 +75,11 @@ private:
 
   int transfer_cindex_;
 
-  std::string path_; // working path
-  std::string fullpath_;
+  // web working directory, must be always ends with '/'
+  std::string dir_; 
+
+  // cache filesystem path for LIST and FILE transfer
+  std::string fspath_; 
 
   deadline_timer_ptr expire_timer_;
 

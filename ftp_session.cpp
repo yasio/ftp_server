@@ -180,7 +180,7 @@ const std::string& ftp_session::to_fspath(const std::string& param)
 void ftp_session::say_hello()
 {
   using namespace std; // for string literal operator 'sv'
-  stock_reply(_mksv("220"), _mksv("x-studio Pro embedded FTP Server (c) 2022."), false);
+  stock_reply(_mksv("220"), _mksv("x-studio embedded FTP Server (c) 2022."), false);
   stock_reply(_mksv("220"), _mksv("Please visit https://x-studio.net/"));
 
   start_exprie_timer();

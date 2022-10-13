@@ -1,15 +1,6 @@
 #include "fsutils.hpp"
 #include <algorithm>
 
-#if defined(_WIN32)
-#  if !defined(_S_IFREG)
-#    define _S_IFREG 0x8000
-#  endif
-#  if !defined(S_IFREG)
-#    define S_IFREG _S_IFREG
-#  endif
-#endif
-
 namespace fsutils
 {
 bool is_dir_exists(cxx17::string_view path)

@@ -2,6 +2,7 @@
 #include "tinydir/tinydir.h"
 #include <functional>
 #include "yasio/cxx17/string_view.hpp"
+#include <sys/stat.h>
 #if defined(_WIN32) && !defined(__MINGW64__) && !defined(__MINGW32__)
 #  include "ntcvt/ntcvt.hpp"
 #  define posix_stat_st struct _stat64
@@ -27,5 +28,6 @@ bool is_file_exists(cxx17::wstring_view path);
 #endif
 long long get_file_size(cxx17::string_view path, bool& isdir);
 void to_styled_path(std::string& path);
-void list_files(const std::string& dirPath, const std::function<void(tinydir_file&)>& callback, bool recursively = false);
+void list_files(const std::string& dirPath, const std::function<void(tinydir_file&)>& callback,
+                bool recursively = false);
 } // namespace fsutils

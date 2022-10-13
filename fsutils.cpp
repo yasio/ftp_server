@@ -1,6 +1,15 @@
 #include "fsutils.hpp"
 #include <algorithm>
 
+#if defined(_WIN32)
+#  if !defined(_S_IFREG)
+#    define _S_IFREG 0x8000
+#  endif
+#  if !defined(S_IFREG)
+#    define S_IFREG _S_IFREG
+#  endif
+#endif
+
 namespace fsutils
 {
 bool is_dir_exists(cxx17::string_view path)
@@ -44,7 +53,8 @@ static bool is_dir_exists_wide(const wchar_t* path)
     return st.st_mode & S_IFDIR;
   return false;
 }
-static void list_files_wide(const wchar_t* dirPath, const std::function<void(tinydir_file&)>& callback, bool recursively)
+static void list_files_wide(const wchar_t* dirPath,
+                            const std::function<void(tinydir_file&)>& callback, bool recursively)
 {
   if (is_dir_exists_wide(dirPath))
   {
@@ -77,14 +87,16 @@ static void list_files_wide(const wchar_t* dirPath, const std::function<void(tin
     tinydir_close(&dir);
   }
 }
-void list_files(const std::string& dirPath, const std::function<void(tinydir_file&)>& callback, bool recursively)
-{ 
-    auto wpath = ntcvt::from_chars(dirPath, CP_UTF8);
-    list_files_wide(wpath.c_str(), callback, recursively);
+void list_files(const std::string& dirPath, const std::function<void(tinydir_file&)>& callback,
+                bool recursively)
+{
+  auto wpath = ntcvt::from_chars(dirPath, CP_UTF8);
+  list_files_wide(wpath.c_str(), callback, recursively);
 }
 void to_styled_path(std::string& path) { std::replace(path.begin(), path.end(), '/', '\\'); }
 #else
-void list_files(const std::string& dirPath, const std::function<void(tinydir_file&)>& callback, bool recursively)
+void list_files(const std::string& dirPath, const std::function<void(tinydir_file&)>& callback,
+                bool recursively)
 {
   if (fsutils::is_dir_exists(dirPath))
   {

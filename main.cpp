@@ -10,8 +10,10 @@ extern void sinitd(void);
 
 int main(int argc, char** argv)
 {
-  if (argc < 2)
+  if (argc < 2) {
+    fprintf(stderr, "%s", "Usage: ftp_server wwwroot <wanip>\n");
     return EINVAL;
+  }
 
   cxx17::string_view wwwroot = argv[1];
   if (!fsutils::is_dir_exists(wwwroot))

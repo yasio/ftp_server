@@ -71,26 +71,26 @@ template <typename _Elem> _Elem* prepare(CStringT<_Elem, StrTraitMFC_DLL<_Elem>>
 } // namespace buffer_traits
 
 template <typename _StringContType>
-inline _StringContType wcbs2a(const wchar_t* wcb, int len, UINT cp = NTCVT_CP_DEFAULT)
+inline _StringContType wcbs2a(const wchar_t* wcb, size_t len, UINT cp = NTCVT_CP_DEFAULT)
 {
-  if (len == -1)
+  if (len == (size_t)-1)
     len = lstrlenW(wcb);
   _StringContType buffer;
   int cch;
-  if (len > 0 && (cch = ::WideCharToMultiByte(cp, 0, wcb, len, NULL, 0, NULL, NULL)) > 0)
-    ::WideCharToMultiByte(cp, 0, wcb, len, buffer_traits::prepare(buffer, cch), cch, NULL, NULL);
+  if (len > 0 && (cch = ::WideCharToMultiByte(cp, 0, wcb, static_cast<int>(len), NULL, 0, NULL, NULL)) > 0)
+    ::WideCharToMultiByte(cp, 0, wcb, static_cast<int>(len), buffer_traits::prepare(buffer, cch), cch, NULL, NULL);
   return buffer;
 }
 
 template <typename _StringContType>
-inline _StringContType mcbs2w(const char* mcb, int len, UINT cp = NTCVT_CP_DEFAULT)
+inline _StringContType mcbs2w(const char* mcb, size_t len, UINT cp = NTCVT_CP_DEFAULT)
 {
   if (len == -1)
     len = lstrlenA(mcb);
   _StringContType buffer;
   int cch;
-  if (len > 0 && (cch = ::MultiByteToWideChar(cp, 0, mcb, len, NULL, 0)) > 0)
-    ::MultiByteToWideChar(cp, 0, mcb, len, buffer_traits::prepare(buffer, cch), cch);
+  if (len > 0 && (cch = ::MultiByteToWideChar(cp, 0, mcb, static_cast<int>(len), NULL, 0)) > 0)
+    ::MultiByteToWideChar(cp, 0, mcb, static_cast<int>(len), buffer_traits::prepare(buffer, cch), cch);
 
   return buffer;
 }

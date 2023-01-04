@@ -21,10 +21,11 @@ long long get_file_size(cxx17::string_view path, bool& isdir)
 {
   posix_stat_st st;
   if (0 == posix_stat(path.data(), &st))
+  {
     if (st.st_mode & S_IFREG)
       return st.st_size;
-    else
-      isdir = true;
+    isdir = true;
+  }
   return -1;
 }
 #if defined(_WIN32) && !defined(__MINGW64__) && !defined(__MINGW32__)

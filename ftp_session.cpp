@@ -203,11 +203,11 @@ void ftp_session::start_exprie_timer()
 timer_cb_t ftp_session::create_timer_cb()
 {
   std::weak_ptr<ftp_session> this_wptr = shared_from_this();
-  return [=](io_service&) {
+  return [=](io_service& s) {
     auto thiz = this_wptr.lock();
     if (thiz)
     {
-      bool expired = expire_timer_->expired();
+      bool expired = expire_timer_->expired(s);
       if (expired && !thiz->transferring_)
       { // timeout
         if (thiz->thandle_ctl_)

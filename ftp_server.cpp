@@ -46,7 +46,6 @@ void ftp_server::run(int max_clients, u_short port)
   service_.reset(new io_service(&hosts.front(), static_cast<int>(hosts.size())));
 
   service_->set_option(YOPT_S_NO_NEW_THREAD, 1);
-  service_->set_option(YOPT_S_DEFERRED_EVENT, 0);
   service_->set_option(YOPT_C_MOD_FLAGS, FTP_CONTROL_CHANNEL_INDEX, YCF_REUSEADDR, 0);
 
   service_->schedule(std::chrono::microseconds(1), [](io_service& service) {

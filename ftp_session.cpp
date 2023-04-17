@@ -153,7 +153,7 @@ ftp_session::ftp_session(ftp_server& server, transport_handle_t thandle, int tra
 ftp_session::~ftp_session()
 {
   if (expire_timer_)
-    expire_timer_->cancel(*__service);
+    expire_timer_->cancel();
 
   printf("the ftp_session: %p destroyed!\n", this);
 }
@@ -192,7 +192,7 @@ void ftp_session::start_exprie_timer()
   if (expire_timer_)
   {
     expire_timer_->expires_from_now();
-    expire_timer_->async_wait(*__service, create_timer_cb());
+    expire_timer_->async_wait(create_timer_cb());
   }
   else
   {
@@ -253,7 +253,7 @@ void ftp_session::handle_packet(yasio::io_packet& packet)
   if (it != handlers_.end())
   {
     it->second(this, param);
-    expire_timer_->cancel(*__service);
+    expire_timer_->cancel();
     start_exprie_timer();
   }
   else

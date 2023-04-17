@@ -207,7 +207,7 @@ timer_cb_t ftp_session::create_timer_cb()
     auto thiz = this_wptr.lock();
     if (thiz)
     {
-      bool expired = expire_timer_->expired(s);
+      bool expired = expire_timer_->expired();
       if (expired && !thiz->transferring_)
       { // timeout
         if (thiz->thandle_ctl_)

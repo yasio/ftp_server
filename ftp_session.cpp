@@ -1,5 +1,4 @@
 ﻿#include "ftp_session.hpp"
-#include "yasio/obstream.hpp"
 #include "ftp_server.hpp"
 
 #include <sys/types.h>

@@ -1,4 +1,6 @@
-#ifndef _WIN32
+#include "initd.h"
+
+#if defined(_HAVE_INITD)
 
 #  include <stdlib.h>
 #  include <stdio.h>

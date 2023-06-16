@@ -4,7 +4,9 @@
 */
 #include "ftp_server.hpp"
 
-#if !defined(_WIN32)
+#include "initd.h"
+
+#if defined(_HAVE_INITD)
 extern void sinitd(void);
 #endif
 
@@ -25,7 +27,7 @@ int main(int argc, char** argv)
     wanip = argv[2];
   }
 
-#if !defined(_WIN32) // runas daemon at linux platform.
+#if defined(_HAVE_INITD) // runas daemon at unix platform.
   sinitd();
 #endif
   ftp_server server(wwwroot, wanip);
